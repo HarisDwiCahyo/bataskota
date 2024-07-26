@@ -40,9 +40,12 @@
     {{-- vite resource --}}
     {{-- @vite(['resources/css/mainmaps.css', 'resources/js/mainmaps.js']) --}}
 
-    @foreach (\App\Helpers\ViterHelper::viteAssets($title) as $asset)
-        @vite($asset)
-    @endforeach
+    @php
+        $assets = App\Helpers\ViterHelper::getAssetsByTitle($title);
+    @endphp
+    @if (!empty($assets))
+        @vite($assets)
+    @endif
 
 </head>
 

@@ -1,4 +1,20 @@
 @extends('layout.beranda')
+@section('css')
+    <style>
+        #myGrid {
+            height: 400px;
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .ag-theme-quartz {
+            --ag-foreground-color: rgb(22, 68, 11) !important;
+            --ag-background-color: rgb(255, 255, 255) !important;
+            --ag-header-background-color: rgb(255, 255, 255) !important;
+            --ag-odd-row-background-color: rgba(211, 204, 202, 0.03) !important;
+            --ag-font-size: 14px !important;
+        }
+    </style>
+@endsection
 @section('mainsection')
     <main id="main">
         <!-- ======= Breadcrumbs ======= -->
@@ -67,7 +83,7 @@
                     </div>
                 </div> --}}
                 <div class="card-body">
-                    <div id="myGrid" class="ag-theme-quartz"></div>
+                    <div id="myGrid" style="height: 300px" class="ag-theme-quartz"></div>
                 </div>
             </div>
         </section>

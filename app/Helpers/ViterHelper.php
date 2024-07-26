@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Helpers;
 
 class ViterHelper
@@ -63,14 +64,22 @@ class ViterHelper
             'historistablerecapkelurahan' => ['resources/css/historistablerecapkelurahan.css', 'resources/js/historistablerecapkelurahan.js'],
             'formeditkelurahan' => ['resources/css/formeditkelurahan.css', 'resources/js/formeditkelurahan.js'],
             'mapskelurahan' => ['resources/css/mapskelurahan.css', 'resources/js/mapskelurahan.js'],
+            //rw
             'forminputrw' => ['resources/css/forminputrw.css', 'resources/js/forminputrw.js'],
             'forminputrw2' => ['resources/css/forminputrw2.css', 'resources/js/forminputrw2.js'],
             'tablerecaprw' => ['resources/css/tablerecaprw.css', 'resources/js/tablerecaprw.js'],
             'historistablerecaprw' => ['resources/css/historistablerecaprw.css', 'resources/js/historistablerecaprw.js'],
             'formeditrw' => ['resources/css/formeditrw.css', 'resources/js/formeditrw.js'],
             'mapsrw' => ['resources/css/mapsrw.css', 'resources/js/mapsrw.js'],
+
             'tableadmin' => ['resources/css/tableadmin.css', 'resources/js/tableadmin.js'],
             'dashboard' => ['resources/css/dashboard.css', 'resources/js/dashboard.js'],
+            'mainmaps' => ['resources/css/mainmaps.css', 'resources/js/mainmaps.js'],
+
+            'home' => ['resources/css/mainberanda.css', 'resources/js/mainberanda.js'],
+            'regulasi' => ['resources/css/mainberanda.css', 'resources/js/mainberanda.js'],
+            'kontak' => ['resources/css/mainberanda.css', 'resources/js/mainberanda.js'],
+
             'tableregulasi' => ['resources/css/tableregulasi.css', 'resources/js/tableregulasi.js'],
         ];
 
