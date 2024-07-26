@@ -27,13 +27,19 @@
     <link href="{{ asset('dashboard/vendor/remixicon/remixicon.css') }}" rel="stylesheet" />
     <link href="{{ asset('dashboard/vendor/swiper/swiper-bundle.min.css') }}" rel="stylesheet" />
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ag-grid/32.0.2/ag-grid-community.js"
+        integrity="sha512-2WKG1S1aBQpJArNdA8hCI40IL+AGqAKO4kYWXBFugEKeIlbgGSDITMlmw+DoKhYY0kuTVblO/IbG7jXi8TslJg=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
 
     <!-- Template Main CSS File -->
     {{-- @vite(['resources/css/mainberanda.css', 'resources/js/mainberanda.js']) --}}
-
+    <link rel="stylesheet" href="{{ asset('build/assets/mainberanda-B_GWS6gI.css') }}">
+    {{-- 
     @foreach (\App\Helpers\ViterHelper::viteAssets($title) as $asset)
         @vite($asset)
-    @endforeach
+    @endforeach --}}
+
     <!-- =======================================================
   * Template Name: Sailor
   * Template URL: https://bootstrapmade.com/sailor-free-bootstrap-theme/
@@ -168,13 +174,15 @@
             class="bi bi-arrow-up-short"></i></a>
 
     <!-- Vendor JS Files -->
+
+
     <script src="{{ asset('dashboard/vendor/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
     <script src="{{ asset('dashboard/vendor/glightbox/js/glightbox.min.js') }}"></script>
     <script src="{{ asset('dashboard/vendor/isotope-layout/isotope.pkgd.min.js') }}"></script>
     <script src="{{ asset('dashboard/vendor/swiper/swiper-bundle.min.js') }}"></script>
     <script src="{{ asset('dashboard/vendor/waypoints/noframework.waypoints.js') }}"></script>
     <script src="{{ asset('dashboard/vendor/php-email-form/validate.js') }}"></script>
-
+    <script type="module" src=" {{ asset('build/assets/mainberanda-DqS3dzP2.js') }}"></script>
     <script>
         var title = {!! json_encode($title) !!}; // Convert PHP title to JavaScript variable
         var data = null;
@@ -184,7 +192,6 @@
             @endisset
         }
     </script>
-
 </body>
 
 </html>
