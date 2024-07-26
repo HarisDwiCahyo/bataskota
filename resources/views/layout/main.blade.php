@@ -41,85 +41,22 @@
     <!-- Data Tables -->
     <link rel="stylesheet" href="{{ asset('asset/vendor/datatables/dataTables.bs4.css') }}" />
     <link rel="stylesheet" href="{{ asset('asset/vendor/datatables/dataTables.bs4-custom.css') }}" />
-    {{-- vite resource --}}
+    @yield('css')
+    @php
+        $assets = App\Helpers\ViterHelper::getAssetsByTitle($title);
+    @endphp
+
+
+    @if (!empty($assets))
+        @vite($assets)
+    @endif
+
     {{-- Pilar --}}
 
-    {{-- @if ($title === 'forminputpilar')
-        @vite(['resources/css/forminputpilar.css', 'resources/js/forminputpilar.js'])
-    @elseif ($title === 'forminputpilar2')
-        @vite(['resources/css/forminputpilar2.css', 'resources/js/forminputpilar2.js'])
-    @elseif ($title === 'tablerecappilar')
-        @vite(['resources/css/tablerecappilar.css', 'resources/js/tablerecappilar.js'])
-    @elseif ($title === 'historistablerecappilar')
-        @vite(['resources/css/historistablerecappilar.css', 'resources/js/historistablerecappilar.js'])
-    @elseif ($title === 'formeditpilar')
-        @vite(['resources/css/formeditpilar.css', 'resources/js/formeditpilar.js'])
-    @elseif ($title === 'mapspilar')
-        @vite(['resources/css/mapspilar.css', 'resources/js/mapspilar.js']) --}}
-    {{-- Kota Jogja --}}
-    {{-- @elseif ($title === 'forminputkota')
-        @vite(['resources/css/forminputkota.css', 'resources/js/forminputkota.js'])
-    @elseif ($title === 'forminputkota2')
-        @vite(['resources/css/forminputkota2.css', 'resources/js/forminputkota2.js'])
-    @elseif ($title === 'tablerecapkota')
-        @vite(['resources/css/tablerecapkota.css', 'resources/js/tablerecapkota.js'])
-    @elseif ($title === 'historistablerecapkota')
-        @vite(['resources/css/historistablerecapkota.css', 'resources/js/historistablerecapkota.js'])
-    @elseif ($title === 'formeditkota')
-        @vite(['resources/css/formeditkota.css', 'resources/js/formeditkota.js'])
-    @elseif ($title === 'mapskota')
-        @vite(['resources/css/mapskota.css', 'resources/js/mapskota.js']) --}}
-    {{-- Kemantren --}}
-    {{-- @elseif ($title === 'forminputkemantren')
-        @vite(['resources/css/forminputkemantren.css', 'resources/js/forminputkemantren.js'])
-    @elseif ($title === 'forminputkemantren2')
-        @vite(['resources/css/forminputkemantren2.css', 'resources/js/forminputkemantren2.js'])
-    @elseif ($title === 'tablerecapkemantren')
-        @vite(['resources/css/tablerecapkemantren.css', 'resources/js/tablerecapkemantren.js'])
-    @elseif ($title === 'historistablerecapkemantren')
-        @vite(['resources/css/historistablerecapkemantren.css', 'resources/js/historistablerecapkemantren.js'])
-    @elseif ($title === 'mapskemantren')
-        @vite(['resources/css/mapskemantren.css', 'resources/js/mapskemantren.js'])
-    @elseif ($title === 'formeditkemantren')
-        @vite(['resources/css/formeditkemantren.css', 'resources/js/formeditkemantren.js']) --}}
-    {{-- Kelurahan --}}
-    {{-- @elseif ($title === 'forminputkelurahan')
-        @vite(['resources/css/forminputkelurahan.css', 'resources/js/forminputkelurahan.js'])
-    @elseif ($title === 'forminputkelurahan2')
-        @vite(['resources/css/forminputkelurahan2.css', 'resources/js/forminputkelurahan2.js'])
-    @elseif ($title === 'tablerecapkelurahan')
-        @vite(['resources/css/tablerecapkelurahan.css', 'resources/js/tablerecapkelurahan.js'])
-    @elseif ($title === 'historistablerecapkelurahan')
-        @vite(['resources/css/historistablerecapkelurahan.css', 'resources/js/historistablerecapkelurahan.js'])
-    @elseif ($title === 'formeditkelurahan')
-        @vite(['resources/css/formeditkelurahan.css', 'resources/js/formeditkelurahan.js'])
-    @elseif ($title === 'mapskelurahan')
-        @vite(['resources/css/mapskelurahan.css', 'resources/js/mapskelurahan.js']) --}}
-    {{-- RW --}}
-    {{-- @elseif ($title === 'forminputrw')
-        @vite(['resources/css/forminputrw.css', 'resources/js/forminputrw.js'])
-    @elseif ($title === 'forminputrw2')
-        @vite(['resources/css/forminputrw2.css', 'resources/js/forminputrw2.js'])
-    @elseif ($title === 'tablerecaprw')
-        @vite(['resources/css/tablerecaprw.css', 'resources/js/tablerecaprw.js'])
-    @elseif ($title === 'historistablerecaprw')
-        @vite(['resources/css/historistablerecaprw.css', 'resources/js/historistablerecaprw.js'])
-    @elseif ($title === 'formeditrw')
-        @vite(['resources/css/formeditrw.css', 'resources/js/formeditrw.js'])
-    @elseif ($title === 'mapsrw')
-        @vite(['resources/css/mapsrw.css', 'resources/js/mapsrw.js'])
-    @elseif ($title === 'tableadmin')
-        @vite(['resources/css/tableadmin.css', 'resources/js/tableadmin.js'])
-    @elseif ($title === 'dashboard')
-        @vite(['resources/css/dashboard.css', 'resources/js/dashboard.js'])
-    @elseif ($title === 'tableregulasi')
-        @vite(['resources/css/tableregulasi.css', 'resources/js/tableregulasi.js'])
-    @else
-    @endif --}}
 
-    @foreach (\App\Helpers\ViterHelper::viteAssets($title) as $asset)
+    {{--  @foreach (\App\Helpers\ViterHelper::viteAssets($title) as $asset)
         @vite($asset)
-    @endforeach
+    @endforeach  --}}
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
