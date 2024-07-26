@@ -1,0 +1,566 @@
+html,
+body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+}
+.app-wrap,
+.app-container,
+.app-side,
+.app-main {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+}
+.app-container {
+    display: flex;
+    top: 0;
+}
+.app-side {
+    height: 100%;
+}
+.app-main {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    width: 100%;
+    background-color: #fff;
+}
+#attribute {
+    max-height: 200px;
+    overflow: auto;
+    font-size: 13px;
+    background-color: white;
+    border: 1px solid #ffffff;
+    margin-bottom: 1px;
+    transition: max-height 0.3s ease;
+}
+#attribute .card-body {
+    display: none;
+}
+#map {
+    flex-grow: 1;
+    width: 100%;
+    max-height: 100%;
+}
+
+.side-nav {
+    display: none; /* Hide all side-navs by default */
+}
+
+.side-nav.active {
+    display: block; /* Show the active side-nav */
+}
+/* Set the background color of li elements to green */
+.user-actions li {
+    background-color: rgba(12, 85, 15, 0.6); /* Green background */
+    border: #000000 solid 1px;
+    border-radius: 4px; /* Optional: adds rounded corners */
+    margin: 2px; /* Adds some space between list items */
+    padding: 2px; /* Adds padding for better spacing */
+}
+
+/* Set the color of the icons to white for better contrast */
+.user-actions li a .icon-home,
+.user-actions li a .icon-redo2,
+.user-actions li a .icon-map,
+.user-actions li a .icon-layers2,
+.user-actions li a .icon-briefcase,
+.user-actions li a .icon-paint-format {
+    color: white;
+    font-size: 24px; /* Optional: adjusts the size of the icons */
+}
+
+/* Optional: add hover effect */
+.user-actions li:hover {
+    background-color: #45a049; /* Slightly darker green on hover */
+}
+#homeLink .nav-title {
+    margin-left: 15px;
+}
+
+#buttonnav {
+    position: absolute;
+    z-index: 1;
+    right: 1%;
+    top: 10px;
+    border: 1px solid rgb(0, 0, 0);
+    background-color: rgb(255, 255, 255);
+    font-family: Verdana, Geneva, Tahoma, sans-serif;
+    border-radius: 5px;
+}
+/* Set the color of the icons to green */
+.toggle-icon i {
+    color: rgba(12, 85, 15, 0.6) !important; /* Green color for icons */
+    font-size: 24px; /* Optional: adjust the size of the icons */
+    margin-right: 10px; /* Optional: adds some space between icons */
+}
+
+/* Optional: add hover effect for icons */
+.toggle-icon i:hover {
+    color: #45a049 !important; /* Slightly darker green on hover */
+}
+
+.col-md-2 {
+    max-width: 50px; /* Adjust the width as needed */
+    padding-left: 5px;
+    padding-top: 4px;
+    height: 47px;
+}
+
+.toggle-icon {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 35px;
+    width: 35px;
+}
+
+.toggle-icon i {
+    font-size: 30px;
+    color: rgba(12, 85, 15, 0.6);
+}
+
+/* Style for form-group elements */
+.side-nav .form-group {
+    margin-top: 10px;
+    margin-bottom: 0.5rem; /* Spacing between form groups */
+}
+.side-nav .btn-success {
+    margin-bottom: 0.5rem; /* Spacing between form groups */
+    border-radius: 5px;
+    width: 100%;
+    /* background-color: #077209; */
+}
+.custom-control.custom-checkbox {
+    margin-top: 7px;
+    font-family: monospace;
+}
+
+/* Styling for the icon and title */
+.has-icon {
+    margin-right: 10px;
+}
+
+.nav-title {
+    font-size: 14px;
+
+    font-weight: bold;
+}
+
+.custom-control.custom-checkbox input[type="checkbox"] {
+    display: none; /* Hide default checkbox */
+}
+
+.custom-control.custom-checkbox input[type="checkbox"] + label {
+    position: relative;
+    padding-left: 30px;
+    cursor: pointer;
+    display: inline-block;
+    line-height: 20px;
+    user-select: none;
+    font-size: 13px;
+}
+
+.custom-control.custom-checkbox input[type="checkbox"] + label:before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 20px;
+    height: 20px;
+    border: 1px solid #ccc;
+    background: white;
+    border-radius: 4px;
+}
+
+.custom-control.custom-checkbox input[type="checkbox"]:checked + label:before {
+    background-color: #0d5110;
+    border-color: #0d400f;
+}
+
+.custom-control.custom-checkbox input[type="checkbox"]:checked + label:after {
+    content: "";
+    position: absolute;
+    left: 6px;
+    top: 3px;
+    width: 6px;
+    height: 10px;
+    border: solid white;
+    border-width: 0 3px 3px 0;
+    transform: rotate(45deg);
+}
+
+.custom-control.custom-radio input[type="radio"] {
+    display: none; /* Hide default radio button */
+}
+
+.custom-control.custom-radio input[type="radio"] + label {
+    position: relative;
+    padding-left: 30px;
+    cursor: pointer;
+    display: inline-block;
+    line-height: 20px;
+    user-select: none;
+}
+
+.custom-control.custom-radio input[type="radio"] + label:before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 20px;
+    height: 20px;
+    border: 1px solid #ccc;
+    background: white;
+    border-radius: 50%;
+}
+
+.custom-control.custom-radio input[type="radio"]:checked + label:before {
+    background-color: #09470b;
+    border-color: #074809;
+}
+
+.custom-control.custom-radio input[type="radio"]:checked + label:after {
+    content: "";
+    position: absolute;
+    left: 7px;
+    top: 7px;
+    width: 6px;
+    height: 6px;
+    background: white;
+    border-radius: 50%;
+}
+
+/* BaseMaps */
+.custom-control {
+    position: relative;
+    display: inline-block;
+    width: 185px; /* Lebar elemen diperbesar */
+    margin-bottom: 10px; /* Margin bawah antar elemen */
+    text-align: left; /* Pusatkan teks */
+}
+.custom-control img {
+    width: 100%; /* Lebar penuh dari elemen parent */
+    height: 50px; /* Sesuaikan tinggi otomatis */
+    border-radius: 8px; /* Rounding sudut gambar */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Bayangan halus */
+}
+.custom-control input[type="radio"] {
+    position: absolute; /* Posisi absolut */
+    top: 8px; /* Posisikan di atas */
+    left: 8px; /* Posisikan di kiri */
+    z-index: 2; /* Letakkan di atas gambar */
+    opacity: 0; /* Sembunyikan input radio */
+}
+.custom-control label {
+    position: absolute; /* Posisi absolut */
+    bottom: 0; /* Posisikan di bawah */
+    left: 50%; /* Posisikan di tengah horizontal */
+    transform: translateX(-50%); /* Pusatkan label */
+    background-color: rgba(
+        50,
+        106,
+        52,
+        0.6
+    ); /* Latar belakang semi transparan */
+    color: #fff; /* Warna teks putih */
+    padding: 2px 4px; /* Padding kecil */
+    border-radius: 0 0 8px 8px; /* Rounding sudut bawah label */
+    font-size: 12px; /* Ukuran font lebih kecil */
+    width: 100%; /* Lebar penuh dari elemen parent */
+    z-index: 1; /* Letakkan di atas gambar namun di bawah input radio */
+}
+.side-nav .form-control-sm {
+    height: calc(1.5em + 0.75rem + 2px);
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    border-radius: 0.2rem;
+    border: 1px solid #ced4da;
+    background-color: #fff;
+    background-clip: padding-box;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.075);
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.side-nav .form-control-sm:focus {
+    border-color: #80bdff;
+    outline: 0;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.side-nav .btn-primary.btn-sm {
+    font-size: 0.875rem;
+    line-height: 1.5;
+    border-radius: 0.2rem;
+    padding: 0.25rem 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.layer-switcher {
+    position: fixed;
+    top: 200px !important;
+    right: 10px !important;
+    text-align: left;
+    font-size: 12px;
+    display: none;
+}
+
+/* .layer-switcher.shown {
+    max-height: 250px;
+}
+.layer-switcher button {
+    background-color: #ffffff !important;
+}
+.layer-switcher .group button {
+    background-size: 10px 16px !important;
+} */
+
+.mousePosition {
+    position: absolute;
+    bottom: auto;
+    left: 51%;
+    right: auto;
+    bottom: 5px;
+    transform: translateX(-50%);
+    border: 1px solid rgb(107, 109, 107);
+    border-radius: 10px;
+    padding: 5px;
+    background-color: rgb(228, 231, 234, 0.6);
+    font-family: Verdana, Geneva, Tahoma, sans-serif;
+    font-size: 12px;
+}
+
+.custom-scale-line {
+    position: absolute;
+    bottom: auto;
+    left: 5%;
+    right: auto;
+    bottom: 10px;
+    transform: translateX(-50%);
+    border-radius: 10px;
+    padding: 5px;
+    font-family: Verdana, Geneva, Tahoma, sans-serif;
+    font-size: 12px;
+}
+
+.myButton {
+    background-color: rgb(251, 255, 255);
+    color: rgb(240, 244, 246);
+    border: #0d400f solid 1px;
+    font-weight: 700;
+    text-align: center;
+    height: 35px;
+    width: 35px;
+    border-radius: 5px;
+    align-items: center;
+}
+
+.myButton .icon {
+    font-size: 16px;
+    color: rgb(0, 0, 0); /* Sesuaikan warna sesuai kebutuhan */
+    align-items: center;
+    justify-content: center;
+}
+
+.myButton:hover {
+    background-color: rgb(180, 180, 184);
+}
+
+.myButton.clicked {
+    background-color: rgb(148, 148, 148);
+}
+
+.myButton.clicked:hover {
+    background-color: rgb(148, 148, 148);
+}
+
+.fsButtonDiv {
+    position: absolute;
+    top: 10px; /* Mengatur jarak dari atas */
+    left: 10px; /* Mengatur jarak dari kanan */
+    z-index: 10; /* Mengatur tumpukan elemen */
+}
+.panButtonDiv {
+    position: absolute;
+    top: 50px; /* Mengatur jarak dari atas */
+    left: 10px; /* Mengatur jarak dari kanan */
+    z-index: 10; /* Mengatur tumpukan elemen */
+}
+.ziButtonDiv {
+    position: absolute;
+    top: 90px; /* Mengatur jarak dari atas */
+    left: 10px; /* Mengatur jarak dari kanan */
+    z-index: 10; /* Mengatur tumpukan elemen */
+}
+.zoButtonDiv {
+    position: absolute;
+    top: 130px; /* Mengatur jarak dari atas */
+    left: 10px; /* Mengatur jarak dari kanan */
+    z-index: 10; /* Mengatur tumpukan elemen */
+}
+/* Measure Styling */
+/* start measure styling */
+.ol-tooltip {
+    position: relative;
+    background: rgb(0, 0, 0, 0.5);
+    border-radius: 4px;
+    color: white;
+    padding: 4px 8px;
+    opacity: 0.7;
+    white-space: nowrap;
+    font-size: 12px;
+}
+
+.ol-tooltip-measure {
+    opacity: 1;
+    font-weight: bold;
+}
+
+.ol-tooltip-static {
+    background-color: #ffcc33;
+    color: black;
+    border: 1px solid white;
+}
+
+.ol-tooltip-measure:before,
+.ol-tooltip-static:before {
+    border-top: 6px solid rgba(0, 0, 0, 0.5);
+    border-right: 6px solid transparent;
+    border-left: 6px solid transparent;
+    content: "";
+    position: absolute;
+    bottom: -6px;
+    margin-left: -7px;
+    left: 50%;
+}
+
+.ol-tooltip-static:before {
+    border-top-color: #ffcc33;
+}
+
+.lengthButtonDiv {
+    position: absolute; /* Menggunakan position absolute agar tetap pada posisinya meskipun halaman di-scroll */
+    top: 170px; /* Mengatur jarak dari atas */
+    left: 10px; /* Mengatur jarak dari kanan */
+    z-index: 10; /* Mengatur tumpukan elemen */
+}
+.areaButtonDiv {
+    position: absolute; /* Menggunakan position absolute agar tetap pada posisinya meskipun halaman di-scroll */
+    top: 210px; /* Mengatur jarak dari atas */
+    left: 10px; /* Mengatur jarak dari kanan */
+    z-index: 10; /* Mengatur tumpukan elemen */
+}
+
+.toggle-icon {
+    display: none; /* Sembunyikan semua ikon secara default */
+}
+
+.legend-list {
+    list-style: none; /* Hapus bullet points */
+    padding: 0; /* Hapus padding default */
+}
+
+.legend-list li {
+    display: flex; /* Gunakan flexbox untuk tata letak horizontal */
+    align-items: center; /* Pusatkan secara vertikal */
+    margin-bottom: 5px; /* Spasi antara item */
+    margin-top: 10px; /* Hapus margin default */
+    margin-left: 23px;
+}
+
+.legend-list li i {
+    margin-right: 8px; /* Spasi antara ikon dan teks */
+    font-size: 30px; /* Ukuran ikon */
+    width: 16px; /* Lebar kotak */
+    height: 16px; /* Tinggi kotak */
+    display: inline-block; /* Membuat kotak sejajar dengan teks */
+    border: 2px solid green; /* Warna garis hijau */
+    background-color: transparent; /* Warna latar transparan */
+    color: #74c0fc; /* Warna ikon */
+}
+
+.legend-list li span {
+    font-size: 14px; /* Ukuran teks */
+    color: #333; /* Warna teks */
+    margin-left: 10px;
+}
+
+/* Optional: Adjust font size for submenu links if applicable */
+#side5 .unifyMenu ul > li > a {
+    font-size: 0.8rem; /* Adjust the font size as needed */
+    margin-left: 10px;
+}
+
+.modal-backdrop {
+    z-index: 100 !important; /* Default value, but you can adjust it if needed */
+}
+
+.modal {
+    z-index: 1050 !important; /* Modal's z-index should be higher than backdrop */
+}
+
+/* Ensure tabs are in one line */
+.modal-dialog {
+    max-width: 60%;
+}
+.modal-body {
+    padding: 0;
+    max-height: 60vh !important; /* Batas tinggi modal-body */
+    overflow-y: auto; /* Menambahkan scroll vertikal jika konten melebihi batas */
+}
+
+.nav-tabs {
+    border-bottom: none; /* Hapus border bawah pada tab */
+}
+
+.nav-item {
+    flex: 1; /* Membiarkan item nav meluas secara merata */
+}
+
+.nav-link {
+    text-align: center !important; /* Center teks dalam tab */
+}
+
+.tab-content {
+    padding: 15px; /* Sesuaikan padding dalam tab content */
+}
+
+.tab-pane ol {
+    padding-left: 10px; /* Sesuaikan padding kiri untuk daftar berurutan */
+}
+
+.tab-pane p,
+.tab-pane li {
+    text-align: justify; /* Rata kanan kiri teks */
+    margin-bottom: 10px; /* Sesuaikan margin bawah untuk paragraf */
+}
+
+.tab-pane .center-img-container {
+    text-align: center; /* Pusatkan gambar dalam kontainer */
+    margin: 20px 0; /* Tambahkan margin untuk jarak */
+}
+
+.tab-pane .center-img-container img {
+    display: inline-block; /* Tampilkan gambar secara baris */
+    width: 30%; /* Setel lebar gambar */
+    height: auto; /* Pertahankan rasio aspek */
+    max-height: 50vh; /* Setel tinggi maksimum untuk responsif */
+    margin: 0 10px; /* Tambahkan margin antara gambar */
+}
+
+/* Tampilkan ikon kedua (app-side) di layar kecil */
+@media (max-width: 767px) {
+    [data-toggle="onoffcanvas"] {
+        display: inline-block;
+    }
+}
+
+/* Tampilkan ikon pertama (app-side-mini-toggler) di layar besar */
+@media (min-width: 768px) {
+    #app-side-mini-toggler {
+        display: inline-block;
+    }
+}
