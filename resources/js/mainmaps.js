@@ -162,14 +162,7 @@ map.addLayer(overlays);
 // Ambil data GeoJSON dari endpoint /kecamatan
 $.getJSON("/kecamatan", function (response) {
     if (response.data) {
-        // Buat objek VectorSource dari data GeoJSON
-        var vectorSource = new VectorSource({
-            features: new GeoJSON().readFeatures(response.data, {
-                featureProjection: "EPSG:4326",
-            }),
-        });
-
-        // Proses data yang diambil
+        var vectorSource = createVectorSource(response.data);
         processKemantren(vectorSource);
     } else {
         console.error("Data GeoJSON tidak ditemukan dalam respons");
@@ -179,140 +172,135 @@ $.getJSON("/kecamatan", function (response) {
 });
 
 var previousFilterLayer = null;
-function processKemantren(vectorSource) {
-    // Proses data dari vectorSource
-    var features = vectorSource.getFeatures();
-    var uniqueKemantrenValues = new Set();
 
-    // Ekstrak nilai dari atribut 'kemantren' dari setiap fitur
+function createVectorSource(data) {
+    return new VectorSource({
+        features: new GeoJSON().readFeatures(data, {
+            featureProjection: "EPSG:4326",
+        }),
+    });
+}
+
+function processKemantren(vectorSource) {
+    var features = vectorSource.getFeatures();
+    var uniqueKemantrenValues = extractUniqueKemantrenValues(features);
+    populateKemantrenSelect(uniqueKemantrenValues);
+    addKemantrenFilterListener();
+}
+
+function extractUniqueKemantrenValues(features) {
+    var uniqueKemantrenValues = new Set();
     features.forEach(function (feature) {
         var properties = feature.getProperties();
         if (properties.hasOwnProperty("kemantren")) {
-            var kemantrenValue = properties["kemantren"];
-            uniqueKemantrenValues.add(kemantrenValue);
+            uniqueKemantrenValues.add(properties["kemantren"]);
         }
     });
+    return uniqueKemantrenValues;
+}
 
-    // Dapatkan elemen select untuk properti kemantren
+function populateKemantrenSelect(values) {
     var propertiKemantrenSelect = document.getElementById("propertikemantren");
-    propertiKemantrenSelect.innerHTML = ""; // Kosongkan opsi sebelumnya
-
-    // Tambahkan nilai kemantren ke elemen select sebagai opsi
-    uniqueKemantrenValues.forEach(function (value) {
+    propertiKemantrenSelect.innerHTML = "";
+    values.forEach(function (value) {
         var option = document.createElement("option");
         option.value = value;
         option.text = value;
         propertiKemantrenSelect.appendChild(option);
     });
+}
 
-    // Tambahkan event listener untuk tombol Cari Kemantren
+function addKemantrenFilterListener() {
     document
         .getElementById("filterkemantren")
         .addEventListener("click", function () {
-            var selectedKemantren = propertiKemantrenSelect.value;
+            var selectedKemantren =
+                document.getElementById("propertikemantren").value;
 
             if (selectedKemantren) {
-                // URL untuk data kecamatan
-                var url = "/kecamatan";
-
-                // Ambil data GeoJSON dari endpoint /kecamatan
-                $.getJSON(url, function (response) {
-                    if (response.data) {
-                        // Buat objek VectorSource dari data GeoJSON
-                        var vectorSource = new VectorSource({
-                            features: new GeoJSON().readFeatures(
-                                response.data,
-                                {
-                                    featureProjection: "EPSG:4326",
-                                }
-                            ),
-                        });
-
-                        // Filter fitur berdasarkan nilai atribut 'kemantren' yang dipilih
-                        var filteredFeatures = vectorSource
-                            .getFeatures()
-                            .filter(function (feature) {
-                                var properties = feature.getProperties();
-                                return (
-                                    properties["kemantren"] ===
-                                    selectedKemantren
-                                );
-                            });
-
-                        // Buat VectorSource baru dengan fitur yang difilter
-                        var filteredSource = new VectorSource({
-                            features: filteredFeatures,
-                        });
-
-                        // Definisikan fungsi gaya (style function) untuk Polygon
-                        function styleFunction(feature) {
-                            return new Style({
-                                stroke: new Stroke({
-                                    color: "red",
-                                    width: 2,
-                                }),
-                                fill: new Fill({
-                                    color: "rgba(0, 0, 255, 0.1)",
-                                }),
-                            });
-                        }
-
-                        // Buat layer vektor dari VectorSource
-                        var vectorLayer = new VectorLayer({
-                            title: "Hasil Filter",
-                            source: filteredSource,
-                            style: styleFunction, // Gunakan fungsi gaya
-                        });
-
-                        // Hapus layer filter sebelumnya jika ada
-                        if (previousFilterLayer) {
-                            map.removeLayer(previousFilterLayer);
-                        }
-
-                        // Tambahkan layer vektor ke peta
-                        map.addLayer(vectorLayer);
-
-                        // Simpan referensi ke layer yang baru ditambahkan
-                        previousFilterLayer = vectorLayer;
-
-                        // Fit map view to the extent of the filtered features
-                        var extent = filteredSource.getExtent();
-                        map.getView().fit(extent, { duration: 1000 });
-
-                        // Lakukan sesuatu dengan filteredSource
-                        console.log(filteredSource);
-                        // Contoh: Menampilkan hasil filter di console
-                        filteredFeatures.forEach(function (feature) {
-                            console.log(feature.getProperties());
-                        });
-                    } else {
-                        console.error(
-                            "Data GeoJSON tidak ditemukan dalam respons"
-                        );
-                    }
-                }).fail(function (jqxhr, textStatus, error) {
-                    console.error(
-                        "Request Failed: " + textStatus + ", " + error
-                    );
-                });
+                fetchAndFilterKemantrenData(selectedKemantren);
             } else {
                 alert("Silakan pilih nilai Kemantren terlebih dahulu.");
             }
         });
 }
 
+function fetchAndFilterKemantrenData(selectedKemantren) {
+    $.getJSON("/kecamatan", function (response) {
+        if (response.data) {
+            var vectorSource = createVectorSource(response.data);
+            var filteredFeatures = filterKemantrenFeatures(
+                vectorSource,
+                selectedKemantren
+            );
+            displayFilteredKemantrenFeatures(filteredFeatures);
+        } else {
+            console.error("Data GeoJSON tidak ditemukan dalam respons");
+        }
+    }).fail(function (jqxhr, textStatus, error) {
+        console.error("Request Failed: " + textStatus + ", " + error);
+    });
+}
+
+function filterKemantrenFeatures(vectorSource, selectedKemantren) {
+    return vectorSource.getFeatures().filter(function (feature) {
+        var properties = feature.getProperties();
+        return properties["kemantren"] === selectedKemantren;
+    });
+}
+
+function displayFilteredKemantrenFeatures(features) {
+    var filteredSource = new VectorSource({
+        features: features,
+    });
+
+    var vectorLayer = new VectorLayer({
+        title: "Hasil Filter",
+        source: filteredSource,
+        style: kemantrenStyleFunction,
+    });
+
+    updateMapLayer(vectorLayer);
+    fitMapToExtent(filteredSource);
+    logFilteredFeatures(features);
+}
+
+function kemantrenStyleFunction(feature) {
+    return new Style({
+        stroke: new Stroke({
+            color: "red",
+            width: 2,
+        }),
+        fill: new Fill({
+            color: "rgba(0, 0, 255, 0.1)",
+        }),
+    });
+}
+
+function updateMapLayer(layer) {
+    if (previousFilterLayer) {
+        map.removeLayer(previousFilterLayer);
+    }
+    map.addLayer(layer);
+    previousFilterLayer = layer;
+}
+
+function fitMapToExtent(source) {
+    var extent = source.getExtent();
+    map.getView().fit(extent, { duration: 1000 });
+}
+
+function logFilteredFeatures(features) {
+    features.forEach(function (feature) {
+        console.log(feature.getProperties());
+    });
+}
+
 //Cari Kelurahan
 // Ambil data GeoJSON dari endpoint /kelurahan untuk mendapatkan nilai kemantren dan kelurahan
 $.getJSON("/kelurahan", function (response) {
     if (response.data) {
-        // Buat objek VectorSource dari data GeoJSON
-        var vectorSource = new VectorSource({
-            features: new GeoJSON().readFeatures(response.data, {
-                featureProjection: "EPSG:4326",
-            }),
-        });
-
-        // Proses data yang diambil untuk mendapatkan nilai kemantren
+        var vectorSource = createKelurahanVectorSource(response.data);
         processKelurahan(vectorSource);
     } else {
         console.error("Data GeoJSON tidak ditemukan dalam respons");
@@ -321,181 +309,159 @@ $.getJSON("/kelurahan", function (response) {
     console.error("Request Failed: " + textStatus + ", " + error);
 });
 
-var previousFilterLayer = null;
+function createKelurahanVectorSource(data) {
+    return new VectorSource({
+        features: new GeoJSON().readFeatures(data, {
+            featureProjection: "EPSG:4326",
+        }),
+    });
+}
 
 function processKelurahan(vectorSource) {
-    // Proses data dari vectorSource untuk mendapatkan nilai kemantren
     var features = vectorSource.getFeatures();
-    var uniqueKemantrenValues = new Set();
+    var uniqueKemantrenValues = extractUniqueKemantrenValues1(features);
+    populateKemantrenSelect1(uniqueKemantrenValues);
+    addKemantrenChangeListener();
+}
 
-    // Ekstrak nilai dari atribut 'kemantren' dari setiap fitur
+function extractUniqueKemantrenValues1(features) {
+    var uniqueKemantrenValues = new Set();
     features.forEach(function (feature) {
         var properties = feature.getProperties();
         if (properties.hasOwnProperty("kemantren")) {
-            var kemantrenValue = properties["kemantren"];
-            uniqueKemantrenValues.add(kemantrenValue);
+            uniqueKemantrenValues.add(properties["kemantren"]);
         }
     });
+    return uniqueKemantrenValues;
+}
 
-    // Dapatkan elemen select untuk properti kemantren
+function populateKemantrenSelect1(values) {
     var propertiKemantrenSelect = document.getElementById("propertikemantren1");
-    propertiKemantrenSelect.innerHTML = ""; // Kosongkan opsi sebelumnya
-
-    // Tambahkan nilai kemantren ke elemen select sebagai opsi
-    uniqueKemantrenValues.forEach(function (value) {
+    propertiKemantrenSelect.innerHTML = "";
+    values.forEach(function (value) {
         var option = document.createElement("option");
         option.value = value;
         option.text = value;
         propertiKemantrenSelect.appendChild(option);
     });
+}
 
-    // Tambahkan event listener untuk properti kemantren
-    propertiKemantrenSelect.addEventListener("change", function () {
-        var selectedKemantren = propertiKemantrenSelect.value;
-
-        // Ambil data GeoJSON dari endpoint /kelurahan
-        $.getJSON("/kelurahan", function (response) {
-            if (response.data) {
-                // Buat objek VectorSource dari data GeoJSON
-                var vectorSource = new VectorSource({
-                    features: new GeoJSON().readFeatures(response.data, {
-                        featureProjection: "EPSG:4326",
-                    }),
-                });
-
-                // Filter fitur kelurahan berdasarkan kemantren yang dipilih
-                var filteredFeatures = vectorSource
-                    .getFeatures()
-                    .filter(function (feature) {
-                        var properties = feature.getProperties();
-                        return properties["kemantren"] === selectedKemantren;
-                    });
-
-                // Dapatkan elemen select untuk properti kelurahan
-                var propertiKelurahanSelect =
-                    document.getElementById("propertikelurahan");
-                propertiKelurahanSelect.innerHTML = ""; // Kosongkan opsi sebelumnya
-
-                // Tambahkan nilai kelurahan ke elemen select sebagai opsi
-                filteredFeatures.forEach(function (feature) {
-                    var properties = feature.getProperties();
-                    var kelurahanValue = properties["kelurahan"];
-
-                    var option = document.createElement("option");
-                    option.value = kelurahanValue;
-                    option.text = kelurahanValue;
-                    propertiKelurahanSelect.appendChild(option);
-                });
-                // Tambahkan event listener untuk tombol Cari Kelurahan
-                document
-                    .getElementById("filterkelurahan")
-                    .addEventListener("click", function () {
-                        var selectedKelurahan = propertiKelurahanSelect.value;
-
-                        if (selectedKelurahan) {
-                            // URL untuk data kelurahan
-                            var url = "/kelurahan";
-
-                            // Ambil data GeoJSON dari endpoint /kelurahan
-                            $.getJSON(url, function (response) {
-                                if (response.data) {
-                                    // Buat objek VectorSource dari data GeoJSON
-                                    var vectorSource = new VectorSource({
-                                        features: new GeoJSON().readFeatures(
-                                            response.data,
-                                            {
-                                                featureProjection: "EPSG:4326",
-                                            }
-                                        ),
-                                    });
-
-                                    // Filter fitur berdasarkan nilai atribut 'kelurahan' yang dipilih
-                                    var filteredFeatures = vectorSource
-                                        .getFeatures()
-                                        .filter(function (feature) {
-                                            var properties =
-                                                feature.getProperties();
-                                            return (
-                                                properties["kelurahan"] ===
-                                                selectedKelurahan
-                                            );
-                                        });
-
-                                    // Buat VectorSource baru dengan fitur yang difilter
-                                    var filteredSource = new VectorSource({
-                                        features: filteredFeatures,
-                                    });
-
-                                    // Definisikan fungsi gaya (style function) untuk Polygon
-                                    function styleFunction(feature) {
-                                        return new Style({
-                                            stroke: new Stroke({
-                                                color: "red",
-                                                width: 2,
-                                            }),
-                                            fill: new Fill({
-                                                color: "rgba(0, 0, 255, 0.1)",
-                                            }),
-                                        });
-                                    }
-
-                                    // Buat layer vektor dari VectorSource
-                                    var vectorLayer = new VectorLayer({
-                                        title: "Hasil Filter",
-                                        source: filteredSource,
-                                        style: styleFunction, // Gunakan fungsi gaya
-                                    });
-
-                                    // Hapus layer filter sebelumnya jika ada
-                                    if (previousFilterLayer) {
-                                        map.removeLayer(previousFilterLayer);
-                                    }
-
-                                    // Tambahkan layer vektor ke peta
-                                    map.addLayer(vectorLayer);
-
-                                    // Simpan referensi ke layer yang baru ditambahkan
-                                    previousFilterLayer = vectorLayer;
-
-                                    // Fit map view to the extent of the filtered features
-                                    var extent = filteredSource.getExtent();
-                                    map.getView().fit(extent, {
-                                        duration: 1000,
-                                    });
-
-                                    // Lakukan sesuatu dengan filteredSource
-                                    console.log(filteredSource);
-                                    // Contoh: Menampilkan hasil filter di console
-                                    filteredFeatures.forEach(function (
-                                        feature
-                                    ) {
-                                        console.log(feature.getProperties());
-                                    });
-                                } else {
-                                    console.error(
-                                        "Data GeoJSON tidak ditemukan dalam respons"
-                                    );
-                                }
-                            }).fail(function (jqxhr, textStatus, error) {
-                                console.error(
-                                    "Request Failed: " +
-                                        textStatus +
-                                        ", " +
-                                        error
-                                );
-                            });
-                        } else {
-                            alert(
-                                "Silakan pilih nilai Kelurahan terlebih dahulu."
-                            );
-                        }
-                    });
-            } else {
-                console.error("Data GeoJSON tidak ditemukan dalam respons");
-            }
-        }).fail(function (jqxhr, textStatus, error) {
-            console.error("Request Failed: " + textStatus + ", " + error);
+function addKemantrenChangeListener() {
+    document
+        .getElementById("propertikemantren1")
+        .addEventListener("change", function () {
+            var selectedKemantren = this.value;
+            fetchFilteredKelurahanData(selectedKemantren);
         });
+}
+
+function fetchFilteredKelurahanData(selectedKemantren) {
+    $.getJSON("/kelurahan", function (response) {
+        if (response.data) {
+            var vectorSource = createKelurahanVectorSource(response.data);
+            var filteredFeatures = filterKelurahanFeatures(
+                vectorSource,
+                selectedKemantren
+            );
+            populateKelurahanSelect(filteredFeatures);
+            addKelurahanFilterListener(filteredFeatures);
+        } else {
+            console.error("Data GeoJSON tidak ditemukan dalam respons");
+        }
+    }).fail(function (jqxhr, textStatus, error) {
+        console.error("Request Failed: " + textStatus + ", " + error);
+    });
+}
+
+function filterKelurahanFeatures(vectorSource, selectedKemantren) {
+    return vectorSource.getFeatures().filter(function (feature) {
+        var properties = feature.getProperties();
+        return properties["kemantren"] === selectedKemantren;
+    });
+}
+
+function populateKelurahanSelect(features) {
+    var propertiKelurahanSelect = document.getElementById("propertikelurahan");
+    propertiKelurahanSelect.innerHTML = "";
+    features.forEach(function (feature) {
+        var properties = feature.getProperties();
+        var kelurahanValue = properties["kelurahan"];
+        var option = document.createElement("option");
+        option.value = kelurahanValue;
+        option.text = kelurahanValue;
+        propertiKelurahanSelect.appendChild(option);
+    });
+}
+
+function addKelurahanFilterListener(features) {
+    document
+        .getElementById("filterkelurahan")
+        .addEventListener("click", function () {
+            var selectedKelurahan =
+                document.getElementById("propertikelurahan").value;
+            if (selectedKelurahan) {
+                filterKelurahanData(selectedKelurahan, features);
+            } else {
+                alert("Silakan pilih nilai Kelurahan terlebih dahulu.");
+            }
+        });
+}
+
+function filterKelurahanData(selectedKelurahan, features) {
+    var filteredFeatures = features.filter(function (feature) {
+        var properties = feature.getProperties();
+        return properties["kelurahan"] === selectedKelurahan;
+    });
+
+    var filteredSource = new VectorSource({
+        features: filteredFeatures,
+    });
+
+    var vectorLayer = createKelurahanVectorLayer(filteredSource);
+
+    updateKelurahanMapLayer(vectorLayer);
+
+    fitKelurahanMapToExtent(filteredSource);
+
+    displayFilteredKelurahanFeatures(filteredFeatures);
+}
+
+function createKelurahanVectorLayer(source) {
+    return new VectorLayer({
+        title: "Hasil Filter",
+        source: source,
+        style: kelurahanStyleFunction, // Gunakan fungsi gaya
+    });
+}
+
+function kelurahanStyleFunction(feature) {
+    return new Style({
+        stroke: new Stroke({
+            color: "red",
+            width: 2,
+        }),
+        fill: new Fill({
+            color: "rgba(0, 0, 255, 0.1)",
+        }),
+    });
+}
+
+function updateKelurahanMapLayer(layer) {
+    if (previousFilterLayer) {
+        map.removeLayer(previousFilterLayer);
+    }
+    map.addLayer(layer);
+    previousFilterLayer = layer;
+}
+
+function fitKelurahanMapToExtent(source) {
+    var extent = source.getExtent();
+    map.getView().fit(extent, { duration: 1000 });
+}
+
+function displayFilteredKelurahanFeatures(features) {
+    features.forEach(function (feature) {
+        console.log(feature.getProperties());
     });
 }
 
@@ -700,86 +666,102 @@ document.getElementById("filterpilar").addEventListener("click", function () {
 
     if (inputValue) {
         var url = "/bataspilar"; // URL untuk data bataspilar
-
-        $.getJSON(url, function (response) {
-            if (response.data) {
-                // Buat objek VectorSource dari data GeoJSON
-                var vectorSource = new VectorSource({
-                    features: new GeoJSON().readFeatures(response.data, {
-                        featureProjection: "EPSG:4326",
-                    }),
-                });
-
-                // Filter fitur berdasarkan nilai mirip dengan nopilar
-                var filteredFeatures = vectorSource
-                    .getFeatures()
-                    .filter(function (feature) {
-                        var properties = feature.getProperties();
-                        var nopilarValue = properties["nopilar"];
-
-                        // Menggunakan metode includes dengan toLowerCase untuk pencarian nilai mirip
-                        return nopilarValue
-                            .toLowerCase()
-                            .includes(inputValue.toLowerCase());
-                    });
-
-                // Buat VectorSource baru dengan fitur yang difilter
-                var filteredSource = new VectorSource({
-                    features: filteredFeatures,
-                });
-
-                // Definisikan fungsi gaya (style function) untuk fitur Point
-                function styleFunction(feature) {
-                    return new Style({
-                        image: new Circle({
-                            radius: 7,
-                            fill: new Fill({
-                                color: "rgba(255, 0, 0, 0.6)",
-                            }),
-                            stroke: new Stroke({
-                                color: "red",
-                                width: 2,
-                            }),
-                        }),
-                    });
-                }
-
-                // Buat layer vektor dari VectorSource
-                var vectorLayer = new VectorLayer({
-                    title: "Hasil Filter",
-                    source: filteredSource,
-                    style: styleFunction, // Gunakan fungsi gaya
-                });
-
-                // Hapus layer filter sebelumnya jika ada
-                if (previousFilterLayer) {
-                    map.removeLayer(previousFilterLayer);
-                }
-
-                // Tambahkan layer vektor ke peta
-                map.addLayer(vectorLayer);
-
-                // Simpan referensi ke layer yang baru ditambahkan
-                previousFilterLayer = vectorLayer;
-
-                // Fit map view to the extent of the filtered features
-                var extent = filteredSource.getExtent();
-                map.getView().fit(extent, { duration: 1000 });
-
-                // Contoh: Menampilkan hasil filter di console
-                filteredFeatures.forEach(function (feature) {
-                    console.log(feature.getProperties());
-                });
-            } else {
-                console.error("Data GeoJSON tidak ditemukan dalam respons");
-            }
-        }).fail(function (jqxhr, textStatus, error) {
-            console.error("Request Failed: " + textStatus + ", " + error);
-        });
+        fetchPilarGeoJSONData(url, inputValue);
     } else {
         alert("Masukkan nilai untuk mencari pilar.");
     }
 });
+
+function fetchPilarGeoJSONData(url, inputValue) {
+    $.getJSON(url, function (response) {
+        if (response.data) {
+            processPilarGeoJSONData(response.data, inputValue);
+        } else {
+            console.error("Data GeoJSON tidak ditemukan dalam respons");
+        }
+    }).fail(function (jqxhr, textStatus, error) {
+        console.error("Request Failed: " + textStatus + ", " + error);
+    });
+}
+
+function processPilarGeoJSONData(data, inputValue) {
+    var vectorSource = createPilarVectorSource(data);
+    var filteredFeatures = filterPilarFeatures(vectorSource, inputValue);
+
+    if (filteredFeatures.length > 0) {
+        var filteredSource = new VectorSource({
+            features: filteredFeatures,
+        });
+
+        var vectorLayer = createPilarVectorLayer(filteredSource);
+
+        updatePilarMapLayer(vectorLayer);
+
+        fitPilarMapToExtent(filteredSource);
+
+        displayFilteredPilarFeatures(filteredFeatures);
+    } else {
+        console.log("Tidak ada fitur yang cocok dengan nilai input.");
+    }
+}
+
+function createPilarVectorSource(data) {
+    return new VectorSource({
+        features: new GeoJSON().readFeatures(data, {
+            featureProjection: "EPSG:4326",
+        }),
+    });
+}
+
+function filterPilarFeatures(vectorSource, inputValue) {
+    return vectorSource.getFeatures().filter(function (feature) {
+        var properties = feature.getProperties();
+        var nopilarValue = properties["nopilar"];
+        return nopilarValue.toLowerCase().includes(inputValue.toLowerCase());
+    });
+}
+
+function createPilarVectorLayer(source) {
+    return new VectorLayer({
+        title: "Hasil Filter",
+        source: source,
+        style: pilarStyleFunction, // Gunakan fungsi gaya
+    });
+}
+
+function pilarStyleFunction(feature) {
+    return new Style({
+        image: new Circle({
+            radius: 7,
+            fill: new Fill({
+                color: "rgba(255, 0, 0, 0.6)",
+            }),
+            stroke: new Stroke({
+                color: "red",
+                width: 2,
+            }),
+        }),
+    });
+}
+
+function updatePilarMapLayer(layer) {
+    if (previousFilterLayer) {
+        map.removeLayer(previousFilterLayer);
+    }
+    map.addLayer(layer);
+    previousFilterLayer = layer;
+}
+
+function fitPilarMapToExtent(source) {
+    var extent = source.getExtent();
+    map.getView().fit(extent, { duration: 1000 });
+}
+
+function displayFilteredPilarFeatures(features) {
+    features.forEach(function (feature) {
+        console.log(feature.getProperties());
+    });
+}
 
 // Variabel untuk menyimpan referensi ke layer vektor dan fitur yang di-highlight
 var pilarLayer = null;
@@ -795,302 +777,415 @@ var rwSource = null; // Variabel untuk menyimpan referensi ke VectorSource untuk
 var highlightedFeature = null; // Variabel untuk menyimpan referensi ke fitur yang sedang di-highlight
 
 // Fungsi untuk memuat data GeoJSON dari URL
+//load data pilar
 function loadPilarLayer() {
-    $.getJSON("/bataspilar", function (response) {
-        if (response.data) {
-            // Hapus layer pilar jika sudah ada sebelumnya
-            if (pilarLayer) {
-                map.removeLayer(pilarLayer);
-                pilarLayer = null;
-            }
-            if (pilarSource) {
-                pilarSource.clear(); // Hapus data lama dari VectorSource
+    fetchPilarData()
+        .then((response) => {
+            if (response.data) {
+                clearPreviousPilarLayer();
+                updatePilarSource(response.data);
+                createPilarLayer();
+                addPilarLayerToMap();
+                fitMapToPilarExtent();
             } else {
-                // Buat objek VectorSource baru jika belum ada
-                pilarSource = new VectorSource();
+                console.error("Data GeoJSON tidak ditemukan dalam respons");
             }
+        })
+        .catch((error) => {
+            console.error("Request Failed: ", error);
+        });
+}
 
-            // Tambahkan fitur dari data GeoJSON ke VectorSource
-            pilarSource.addFeatures(
-                new GeoJSON().readFeatures(response.data, {
-                    featureProjection: "EPSG:4326",
-                })
-            );
+function fetchPilarData() {
+    return $.getJSON("/bataspilar");
+}
 
-            // Buat layer vektor dari VectorSource
-            pilarLayer = new VectorLayer({
-                title: "pilar",
-                source: pilarSource,
-                style: new Style({
-                    image: new Circle({
-                        radius: 5,
-                        fill: new Fill({
-                            color: "blue",
-                        }),
-                        stroke: new Stroke({
-                            color: "white",
-                            width: 2,
-                        }),
-                    }),
+function clearPreviousPilarLayer() {
+    if (pilarLayer) {
+        map.removeLayer(pilarLayer);
+        pilarLayer = null;
+    }
+    if (pilarSource) {
+        pilarSource.clear();
+    } else {
+        pilarSource = new VectorSource();
+    }
+}
+
+function updatePilarSource(data) {
+    pilarSource.addFeatures(
+        new GeoJSON().readFeatures(data, {
+            featureProjection: "EPSG:4326",
+        })
+    );
+}
+
+function createPilarLayer() {
+    pilarLayer = new VectorLayer({
+        title: "pilar",
+        source: pilarSource,
+        style: new Style({
+            image: new Circle({
+                radius: 5,
+                fill: new Fill({
+                    color: "blue",
                 }),
-            });
-
-            // Tambahkan layer vektor ke peta
-            overlays.getLayers().push(pilarLayer);
-
-            // Sesuaikan tampilan peta agar menampilkan data GeoJSON
-            var extent = pilarSource.getExtent();
-            if (
-                extent &&
-                extent[0] !== Infinity &&
-                extent[1] !== Infinity &&
-                extent[2] !== -Infinity &&
-                extent[3] !== -Infinity
-            ) {
-                map.getView().fit(extent, { duration: 1000 });
-            } else {
-                console.warn("Extent tidak valid");
-            }
-        } else {
-            console.error("Data GeoJSON tidak ditemukan dalam respons");
-        }
+                stroke: new Stroke({
+                    color: "white",
+                    width: 2,
+                }),
+            }),
+        }),
     });
 }
 
+function addPilarLayerToMap() {
+    overlays.getLayers().push(pilarLayer);
+}
+
+function fitMapToPilarExtent() {
+    var extent = pilarSource.getExtent();
+    if (isValidExtent(extent)) {
+        map.getView().fit(extent, { duration: 1000 });
+    } else {
+        console.warn("Extent tidak valid");
+    }
+}
+
+function isValidExtent(extent) {
+    return (
+        extent &&
+        extent[0] !== Infinity &&
+        extent[1] !== Infinity &&
+        extent[2] !== -Infinity &&
+        extent[3] !== -Infinity
+    );
+}
+
+//load data kota
 function loadKotaLayer() {
-    $.getJSON("/kota", function (response) {
-        if (response.data) {
-            // Hapus layer kecamatan jika sudah ada sebelumnya
-            if (kotaLayer) {
-                map.removeLayer(kotaLayer);
-                kotaLayer = null;
-            }
-            if (kotaSource) {
-                kotaSource.clear(); // Hapus data lama dari VectorSource
+    fetchKotaData()
+        .then((response) => {
+            if (response.data) {
+                clearPreviousKotaLayer();
+                updateKotaSource(response.data);
+                createKotaLayer();
+                addKotaLayerToMap();
+                fitMapToKotaExtent();
             } else {
-                // Buat objek VectorSource baru jika belum ada
-                kotaSource = new VectorSource();
+                console.error("Data GeoJSON tidak ditemukan dalam respons");
             }
+        })
+        .catch((error) => {
+            console.error("Request Failed: ", error);
+        });
+}
 
-            // Tambahkan fitur dari data GeoJSON ke VectorSource
-            kotaSource.addFeatures(
-                new GeoJSON().readFeatures(response.data, {
-                    featureProjection: "EPSG:4326",
-                })
-            );
+function fetchKotaData() {
+    return $.getJSON("/kota");
+}
 
-            // Buat layer vektor dari VectorSource
-            kotaLayer = new VectorLayer({
-                title: "kota",
-                source: kotaSource,
-                style: new Style({
-                    stroke: new Stroke({
-                        color: "purple",
-                        width: 2,
-                    }),
-                    fill: new Fill({
-                        color: "rgba(0, 0, 255, 0.1)",
-                    }),
-                }),
-            });
+function clearPreviousKotaLayer() {
+    if (kotaLayer) {
+        map.removeLayer(kotaLayer);
+        kotaLayer = null;
+    }
+    if (kotaSource) {
+        kotaSource.clear();
+    } else {
+        kotaSource = new VectorSource();
+    }
+}
 
-            // Tambahkan layer vektor ke peta
-            overlays.getLayers().push(kotaLayer);
+function updateKotaSource(data) {
+    kotaSource.addFeatures(
+        new GeoJSON().readFeatures(data, {
+            featureProjection: "EPSG:4326",
+        })
+    );
+}
 
-            // Sesuaikan tampilan peta agar menampilkan data GeoJSON
-            var extent = kotaSource.getExtent();
-            if (
-                extent &&
-                extent[0] !== Infinity &&
-                extent[1] !== Infinity &&
-                extent[2] !== -Infinity &&
-                extent[3] !== -Infinity
-            ) {
-                map.getView().fit(extent, { duration: 1000 });
-            } else {
-                console.warn("Extent tidak valid");
-            }
-        } else {
-            console.error("Data GeoJSON tidak ditemukan dalam respons");
-        }
+function createKotaLayer() {
+    kotaLayer = new VectorLayer({
+        title: "kota",
+        source: kotaSource,
+        style: new Style({
+            stroke: new Stroke({
+                color: "purple",
+                width: 2,
+            }),
+            fill: new Fill({
+                color: "rgba(0, 0, 255, 0.1)",
+            }),
+        }),
     });
 }
 
+function addKotaLayerToMap() {
+    overlays.getLayers().push(kotaLayer);
+}
+
+function fitMapToKotaExtent() {
+    var extent = kotaSource.getExtent();
+    if (isValidKotaExtent(extent)) {
+        map.getView().fit(extent, { duration: 1000 });
+    } else {
+        console.warn("Extent tidak valid");
+    }
+}
+
+function isValidKotaExtent(extent) {
+    return (
+        extent &&
+        extent[0] !== Infinity &&
+        extent[1] !== Infinity &&
+        extent[2] !== -Infinity &&
+        extent[3] !== -Infinity
+    );
+}
+//load data kecamatan
 function loadKecamatanLayer() {
-    $.getJSON("/kecamatan", function (response) {
-        if (response.data) {
-            // Hapus layer kecamatan jika sudah ada sebelumnya
-            if (kecamatanLayer) {
-                map.removeLayer(kecamatanLayer);
-                kecamatanLayer = null;
-            }
-            if (kecamatanSource) {
-                kecamatanSource.clear(); // Hapus data lama dari VectorSource
+    fetchKecamatanData()
+        .then((response) => {
+            if (response.data) {
+                clearPreviousKecamatanLayer();
+                updateKecamatanSource(response.data);
+                createKecamatanLayer();
+                addKecamatanLayerToMap();
+                fitMapToKecamatanExtent();
             } else {
-                // Buat objek VectorSource baru jika belum ada
-                kecamatanSource = new VectorSource();
+                console.error("Data GeoJSON tidak ditemukan dalam respons");
             }
+        })
+        .catch((error) => {
+            console.error("Request Failed: ", error);
+        });
+}
 
-            // Tambahkan fitur dari data GeoJSON ke VectorSource
-            kecamatanSource.addFeatures(
-                new GeoJSON().readFeatures(response.data, {
-                    featureProjection: "EPSG:4326",
-                })
-            );
+function fetchKecamatanData() {
+    return $.getJSON("/kecamatan");
+}
 
-            // Buat layer vektor dari VectorSource
-            kecamatanLayer = new VectorLayer({
-                title: "Kecamatan",
-                source: kecamatanSource,
-                style: new Style({
-                    stroke: new Stroke({
-                        color: "blue",
-                        width: 2,
-                    }),
-                    fill: new Fill({
-                        color: "rgba(0, 0, 255, 0.1)",
-                    }),
-                }),
-            });
+function clearPreviousKecamatanLayer() {
+    if (kecamatanLayer) {
+        map.removeLayer(kecamatanLayer);
+        kecamatanLayer = null;
+    }
+    if (kecamatanSource) {
+        kecamatanSource.clear();
+    } else {
+        kecamatanSource = new VectorSource();
+    }
+}
 
-            // Tambahkan layer vektor ke peta
-            overlays.getLayers().push(kecamatanLayer);
+function updateKecamatanSource(data) {
+    kecamatanSource.addFeatures(
+        new GeoJSON().readFeatures(data, {
+            featureProjection: "EPSG:4326",
+        })
+    );
+}
 
-            // Sesuaikan tampilan peta agar menampilkan data GeoJSON
-            var extent = kecamatanSource.getExtent();
-            if (
-                extent &&
-                extent[0] !== Infinity &&
-                extent[1] !== Infinity &&
-                extent[2] !== -Infinity &&
-                extent[3] !== -Infinity
-            ) {
-                map.getView().fit(extent, { duration: 1000 });
-            } else {
-                console.warn("Extent tidak valid");
-            }
-        } else {
-            console.error("Data GeoJSON tidak ditemukan dalam respons");
-        }
+function createKecamatanLayer() {
+    kecamatanLayer = new VectorLayer({
+        title: "Kecamatan",
+        source: kecamatanSource,
+        style: new Style({
+            stroke: new Stroke({
+                color: "blue",
+                width: 2,
+            }),
+            fill: new Fill({
+                color: "rgba(0, 0, 255, 0.1)",
+            }),
+        }),
     });
 }
 
+function addKecamatanLayerToMap() {
+    overlays.getLayers().push(kecamatanLayer);
+}
+
+function fitMapToKecamatanExtent() {
+    var extent = kecamatanSource.getExtent();
+    if (isValidKecamatanExtent(extent)) {
+        map.getView().fit(extent, { duration: 1000 });
+    } else {
+        console.warn("Extent tidak valid");
+    }
+}
+
+function isValidKecamatanExtent(extent) {
+    return (
+        extent &&
+        extent[0] !== Infinity &&
+        extent[1] !== Infinity &&
+        extent[2] !== -Infinity &&
+        extent[3] !== -Infinity
+    );
+}
+//load kelurahan
 function loadKelurahanLayer() {
-    $.getJSON("/kelurahan", function (response) {
-        if (response.data) {
-            // Hapus layer kecamatan jika sudah ada sebelumnya
-            if (kelurahanLayer) {
-                map.removeLayer(kelurahanLayer);
-                kelurahanLayer = null;
-            }
-            if (kelurahanSource) {
-                kelurahanSource.clear(); // Hapus data lama dari VectorSource
+    fetchKelurahanData()
+        .then((response) => {
+            if (response.data) {
+                clearPreviousKelurahanLayer();
+                updateKelurahanSource(response.data);
+                createKelurahanLayer();
+                addKelurahanLayerToMap();
+                fitMapToKelurahanExtent();
             } else {
-                // Buat objek VectorSource baru jika belum ada
-                kelurahanSource = new VectorSource();
+                console.error("Data GeoJSON tidak ditemukan dalam respons");
             }
+        })
+        .catch((error) => {
+            console.error("Request Failed: ", error);
+        });
+}
 
-            // Tambahkan fitur dari data GeoJSON ke VectorSource
-            kelurahanSource.addFeatures(
-                new GeoJSON().readFeatures(response.data, {
-                    featureProjection: "EPSG:4326",
-                })
-            );
+function fetchKelurahanData() {
+    return $.getJSON("/kelurahan");
+}
 
-            // Buat layer vektor dari VectorSource
-            kelurahanLayer = new VectorLayer({
-                title: "Kelurahan",
-                source: kelurahanSource,
-                style: new Style({
-                    stroke: new Stroke({
-                        color: "black",
-                        width: 2,
-                    }),
-                    fill: new Fill({
-                        color: "rgba(255, 0, 0, 0.1)",
-                    }),
-                }),
-            });
+function clearPreviousKelurahanLayer() {
+    if (kelurahanLayer) {
+        map.removeLayer(kelurahanLayer);
+        kelurahanLayer = null;
+    }
+    if (kelurahanSource) {
+        kelurahanSource.clear();
+    } else {
+        kelurahanSource = new VectorSource();
+    }
+}
 
-            // Tambahkan layer vektor ke peta
-            overlays.getLayers().push(kelurahanLayer);
+function updateKelurahanSource(data) {
+    kelurahanSource.addFeatures(
+        new GeoJSON().readFeatures(data, {
+            featureProjection: "EPSG:4326",
+        })
+    );
+}
 
-            // Sesuaikan tampilan peta agar menampilkan data GeoJSON
-            var extent = kelurahanSource.getExtent();
-            if (
-                extent &&
-                extent[0] !== Infinity &&
-                extent[1] !== Infinity &&
-                extent[2] !== -Infinity &&
-                extent[3] !== -Infinity
-            ) {
-                map.getView().fit(extent, { duration: 1000 });
-            } else {
-                console.warn("Extent tidak valid");
-            }
-        } else {
-            console.error("Data GeoJSON tidak ditemukan dalam respons");
-        }
+function createKelurahanLayer() {
+    kelurahanLayer = new VectorLayer({
+        title: "Kelurahan",
+        source: kelurahanSource,
+        style: new Style({
+            stroke: new Stroke({
+                color: "black",
+                width: 2,
+            }),
+            fill: new Fill({
+                color: "rgba(255, 0, 0, 0.1)",
+            }),
+        }),
     });
 }
+
+function addKelurahanLayerToMap() {
+    overlays.getLayers().push(kelurahanLayer);
+}
+
+function fitMapToKelurahanExtent() {
+    var extent = kelurahanSource.getExtent();
+    if (isValidKelurahanExtent(extent)) {
+        map.getView().fit(extent, { duration: 1000 });
+    } else {
+        console.warn("Extent tidak valid");
+    }
+}
+
+function isValidKelurahanExtent(extent) {
+    return (
+        extent &&
+        extent[0] !== Infinity &&
+        extent[1] !== Infinity &&
+        extent[2] !== -Infinity &&
+        extent[3] !== -Infinity
+    );
+}
+//load data rw
 
 function loadRWLayer() {
-    $.getJSON("/rw", function (response) {
-        if (response.data) {
-            // Hapus layer RW jika sudah ada sebelumnya
-            if (rwLayer) {
-                map.removeLayer(rwLayer);
-                rwLayer = null;
-            }
-            if (rwSource) {
-                rwSource.clear(); // Hapus data lama dari VectorSource
+    fetchRWData()
+        .then((response) => {
+            if (response.data) {
+                clearPreviousRWLayer();
+                updateRWSource(response.data);
+                createRWLayer();
+                addRWLayerToMap();
+                fitMapToRWExtent();
             } else {
-                // Buat objek VectorSource baru jika belum ada
-                rwSource = new VectorSource();
+                console.error("Data GeoJSON tidak ditemukan dalam respons");
             }
+        })
+        .catch((error) => {
+            console.error("Request Failed: ", error);
+        });
+}
 
-            // Tambahkan fitur dari data GeoJSON ke VectorSource
-            rwSource.addFeatures(
-                new GeoJSON().readFeatures(response.data, {
-                    featureProjection: "EPSG:4326",
-                })
-            );
+function fetchRWData() {
+    return $.getJSON("/rw");
+}
 
-            // Buat layer vektor dari VectorSource
-            rwLayer = new VectorLayer({
-                title: "RW",
-                source: rwSource,
-                style: new Style({
-                    stroke: new Stroke({
-                        color: "green",
-                        width: 2,
-                    }),
-                    fill: new Fill({
-                        color: "rgba(0, 255, 0, 0.1)",
-                    }),
-                }),
-            });
+function clearPreviousRWLayer() {
+    if (rwLayer) {
+        map.removeLayer(rwLayer);
+        rwLayer = null;
+    }
+    if (rwSource) {
+        rwSource.clear();
+    } else {
+        rwSource = new VectorSource();
+    }
+}
 
-            // Tambahkan layer vektor ke peta
-            overlays.getLayers().push(rwLayer);
+function updateRWSource(data) {
+    rwSource.addFeatures(
+        new GeoJSON().readFeatures(data, {
+            featureProjection: "EPSG:4326",
+        })
+    );
+}
 
-            // Sesuaikan tampilan peta agar menampilkan data GeoJSON
-            var extent = rwSource.getExtent();
-            if (
-                extent &&
-                extent[0] !== Infinity &&
-                extent[1] !== Infinity &&
-                extent[2] !== -Infinity &&
-                extent[3] !== -Infinity
-            ) {
-                map.getView().fit(extent, { duration: 1000 });
-            } else {
-                console.warn("Extent tidak valid");
-            }
-        } else {
-            console.error("Data GeoJSON tidak ditemukan dalam respons");
-        }
+function createRWLayer() {
+    rwLayer = new VectorLayer({
+        title: "RW",
+        source: rwSource,
+        style: new Style({
+            stroke: new Stroke({
+                color: "green",
+                width: 2,
+            }),
+            fill: new Fill({
+                color: "rgba(0, 255, 0, 0.1)",
+            }),
+        }),
     });
+}
+
+function addRWLayerToMap() {
+    overlays.getLayers().push(rwLayer);
+}
+
+function fitMapToRWExtent() {
+    var extent = rwSource.getExtent();
+    if (isValidRWExtent(extent)) {
+        map.getView().fit(extent, { duration: 1000 });
+    } else {
+        console.warn("Extent tidak valid");
+    }
+}
+
+function isValidRWExtent(extent) {
+    return (
+        extent &&
+        extent[0] !== Infinity &&
+        extent[1] !== Infinity &&
+        extent[2] !== -Infinity &&
+        extent[3] !== -Infinity
+    );
 }
 
 // Load data Kecamatan saat halaman pertama kali dimuat
@@ -1103,70 +1198,60 @@ $("input[type='checkbox']").change(function () {
 
     // Toggle visibilitas layer berdasarkan status checkbox
     if ($(this).is(":checked")) {
-        // Tampilkan layer jika checkbox diaktifkan
-        if (layerId === "kemantren") {
-            loadKecamatanLayer();
-        } else if (layerId === "rw") {
-            loadRWLayer();
-        } else if (layerId === "kelurahan") {
-            loadKelurahanLayer();
-        } else if (layerId === "kota") {
-            loadKotaLayer();
-        } else if (layerId === "pilar") {
-            loadPilarLayer();
-        }
+        showLayer(layerId);
     } else {
-        // Sembunyikan layer jika checkbox dinonaktifkan
-        if (layerId === "kemantren") {
-            if (kecamatanLayer) {
-                map.removeLayer(kecamatanLayer);
-                kecamatanLayer = null;
-            }
-            if (kecamatanSource) {
-                kecamatanSource.clear();
-                kecamatanSource = null;
-            }
-        } else if (layerId === "rw") {
-            if (rwLayer) {
-                map.removeLayer(rwLayer);
-                rwLayer = null;
-            }
-            if (rwSource) {
-                rwSource.clear();
-                rwSource = null;
-            }
-        } else if (layerId === "kelurahan") {
-            if (kelurahanLayer) {
-                map.removeLayer(kelurahanLayer);
-                kelurahanLayer = null;
-            }
-            if (kelurahanSource) {
-                kelurahanSource.clear();
-                kelurahanSource = null;
-            }
-        } else if (layerId === "kota") {
-            if (kotaLayer) {
-                map.removeLayer(kotaLayer);
-                kotaLayer = null;
-            }
-            if (kotaSource) {
-                kotaSource.clear();
-                kotaSource = null;
-            }
-        } else if (layerId === "pilar") {
-            if (pilarLayer) {
-                map.removeLayer(pilarLayer);
-                pilarLayer = null;
-            }
-            if (pilarSource) {
-                pilarSource.clear();
-                pilarSource = null;
-            }
-        }
+        hideLayer(layerId);
         // Sembunyikan tabel atribut jika tidak ada fitur yang diklik
         document.getElementById("attribute").style.display = "none";
     }
 });
+
+function showLayer(layerId) {
+    if (layerId === "kemantren") {
+        loadKecamatanLayer();
+    } else if (layerId === "rw") {
+        loadRWLayer();
+    } else if (layerId === "kelurahan") {
+        loadKelurahanLayer();
+    } else if (layerId === "kota") {
+        loadKotaLayer();
+    } else if (layerId === "pilar") {
+        loadPilarLayer();
+    }
+}
+
+function hideLayer(layerId) {
+    if (layerId === "kemantren") {
+        removeLayer(kecamatanLayer, kecamatanSource);
+        kecamatanLayer = null;
+        kecamatanSource = null;
+    } else if (layerId === "rw") {
+        removeLayer(rwLayer, rwSource);
+        rwLayer = null;
+        rwSource = null;
+    } else if (layerId === "kelurahan") {
+        removeLayer(kelurahanLayer, kelurahanSource);
+        kelurahanLayer = null;
+        kelurahanSource = null;
+    } else if (layerId === "kota") {
+        removeLayer(kotaLayer, kotaSource);
+        kotaLayer = null;
+        kotaSource = null;
+    } else if (layerId === "pilar") {
+        removeLayer(pilarLayer, pilarSource);
+        pilarLayer = null;
+        pilarSource = null;
+    }
+}
+
+function removeLayer(layer, source) {
+    if (layer) {
+        map.removeLayer(layer);
+    }
+    if (source) {
+        source.clear();
+    }
+}
 
 map.on("click", function (event) {
     var clickedFeature = null;

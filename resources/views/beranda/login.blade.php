@@ -6,7 +6,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
-
+    <link href="{{ asset('dashboard/img/Logo kota.png') }}" rel="icon" />
 
     @foreach (\App\Helpers\ViterHelper::viteAssets($title) as $asset)
         @vite($asset)
@@ -16,7 +16,8 @@
 
 <body>
 
-    <div class="wrapper" style="background-image: url('{{ asset('dashboard/img/background.jpg') }}')">
+    <div class="wrapper"
+        style="background-image: url('{{ asset('dashboard/img/background1.jpg') }}'); background-size: cover; background-position: center; background-repeat: no-repeat;">
         <form action="{{ route('loginproses') }}" method="POST">
             @csrf
             <!----------------------------- Form box ----------------------------------->

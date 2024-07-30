@@ -17,7 +17,7 @@
     <meta property="og:description" content="Marketplace for Bootstrap Admin Dashboards" />
     <meta property="og:type" content="Website" />
     <meta property="og:site_name" content="Bootstrap Gallery" />
-    <link rel="shortcut icon" href="asset/img/favicon.svg" />
+    <link rel="shortcut icon" href="{{ asset('dashboard/img/Logo kota.png') }}" />
     <title>{{ $title }}</title>
     <meta name="csrf-token" content="{{ csrf_token() }}" />
 
