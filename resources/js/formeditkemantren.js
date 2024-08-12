@@ -126,131 +126,123 @@ function addModifyInteraction(map, source) {
         document.getElementById("geom").value = wkt;
     }
 }
-
-$.getJSON("/admin/kecamatan", function (geojsonData) {
-    // Ambil nilai gid dari data pertama
-    var targetGid = data[0]["gid"];
-
-    // Filter data GeoJSON berdasarkan gid untuk mendapatkan polygon target
-    var targetFeature = geojsonData.data.features.find(function (feature) {
+//Add Data Polygon
+// Fungsi untuk mendapatkan fitur target berdasarkan GID
+function getTargetFeature(geojsonData, targetGid) {
+    return geojsonData.data.features.find(function (feature) {
         return feature.properties.gid === targetGid;
     });
+}
 
-    // Jika tidak ada polygon dengan gid target, hentikan eksekusi
+// Fungsi untuk membuat fitur OpenLayers dari fitur GeoJSON
+function createOlFeature(targetFeature, projection) {
+    var geojsonFormat = new GeoJSON();
+    return geojsonFormat.readFeature(targetFeature, {
+        featureProjection: projection, // Sesuaikan proyeksi
+    });
+}
+
+// Fungsi untuk membuat layer vektor dari fitur GeoJSON
+function createVectorLayer(
+    features,
+    title,
+    strokeColor,
+    fillColor,
+    strokeWidth
+) {
+    return new VectorLayer({
+        title: title,
+        source: new VectorSource({ features: features }),
+        style: new Style({
+            stroke: new Stroke({
+                color: strokeColor,
+                width: strokeWidth,
+            }),
+            fill: new Fill({
+                color: fillColor,
+            }),
+        }),
+    });
+}
+
+// Fungsi untuk memperluas extent
+function expandExtent(extent, factor) {
+    return buffer(extent, getWidth(extent) * factor);
+}
+
+// Fungsi utama untuk memproses data GeoJSON
+function processGeojsonData(geojsonData, targetGid, map, overlays) {
+    var targetFeature = getTargetFeature(geojsonData, targetGid);
     if (!targetFeature) {
         console.error("Polygon dengan gid target tidak ditemukan.");
         return;
     }
 
-    // Membuat format GeoJSON
-    var geojsonFormat = new GeoJSON();
+    // Membuat fitur OpenLayers dari target feature
+    var targetOlFeature = createOlFeature(targetFeature, "EPSG:3857");
+    var target02Feature = createOlFeature(targetFeature, "EPSG:4326");
 
-    // Konversi fitur target ke objek fitur OpenLayers
-    var targetOlFeature = geojsonFormat.readFeature(targetFeature, {
-        featureProjection: "EPSG:3857", // Adjust this projection as needed
-    });
-    var target02Feature = geojsonFormat.readFeature(targetFeature, {
-        featureProjection: "EPSG:4326", // Adjust this projection as needed
-    });
-
-    // Mendapatkan extent dari fitur target
+    // Membuat buffer dan memfilter fitur berdasarkan intersection dengan bufferedExtent
     var targetExtent = targetOlFeature.getGeometry().getExtent();
-
-    // Buat buffer sekitar extent target
     var bufferDistance = 500; // Radius dalam satuan meter
     var bufferedExtent = buffer(targetExtent, bufferDistance);
-
-    // Filter fitur GeoJSON berdasarkan intersection dengan bufferedExtent
     var filteredFeatures = geojsonData.data.features.filter(function (feature) {
-        var olFeature = geojsonFormat.readFeature(feature, {
-            featureProjection: "EPSG:3857",
-        });
+        var olFeature = createOlFeature(feature, "EPSG:3857");
         return intersects(bufferedExtent, olFeature.getGeometry().getExtent());
     });
 
-    // Membuat objek GeoJSON dengan fitur yang difilter
-    var filteredGeojsonData = {
-        type: "FeatureCollection",
-        features: filteredFeatures,
-    };
-
-    // Membuat fitur GeoJSON
-    var features = geojsonFormat.readFeatures(filteredGeojsonData, {
-        featureProjection: "EPSG:4326", // Adjust this projection as needed
-    });
-
-    var vectorSource = new VectorSource({
-        features: features,
-    });
-
-    // Membuat layer vektor dari fitur GeoJSON
-    var geojsonLayer = new VectorLayer({
-        title: "Polygon Buffer",
-        source: vectorSource,
-        style: new Style({
-            stroke: new Stroke({
-                color: "blue",
-                width: 2,
-            }),
-            fill: new Fill({
-                color: "rgba(0, 0, 255, 0.1)",
-            }),
+    // Membuat layer dan menambahkannya ke peta
+    var geojsonLayer = createVectorLayer(
+        filteredFeatures.map(function (feature) {
+            return createOlFeature(feature, "EPSG:4326");
         }),
-    });
-
-    // Menambahkan layer GeoJSON ke dalam grup overlays
+        "Polygon Buffer",
+        "blue",
+        "rgba(0, 0, 255, 0.1)",
+        2
+    );
     overlays.getLayers().push(geojsonLayer);
 
-    // Membuat layer khusus untuk fitur target
-    var targetVectorSource = new VectorSource({
-        features: [target02Feature],
-    });
-
-    var targetLayer = new VectorLayer({
-        title: "Polygon Target",
-        source: targetVectorSource,
-        style: new Style({
-            stroke: new Stroke({
-                color: "yellow",
-                width: 3,
-            }),
-            fill: new Fill({
-                color: "rgba(255, 255, 0, 0.3)",
-            }),
-        }),
-    });
-
-    // Menambahkan layer target yang di-highlight ke dalam grup overlays
+    var targetLayer = createVectorLayer(
+        [target02Feature],
+        "Polygon Target",
+        "yellow",
+        "rgba(255, 255, 0, 0.3)",
+        3
+    );
     overlays.getLayers().push(targetLayer);
-    // Mendapatkan extent dari fitur yang difilter
-    var extent = targetVectorSource.getExtent();
 
-    // Memperluas extent sedikit untuk zoom out
-    var expandedExtent = buffer(extent, getWidth(extent) * 0.1); // 10% buffer
-
-    // Mengatur tampilan peta agar sesuai dengan expandedExtent
+    // Menyesuaikan tampilan peta
+    var expandedExtent = expandExtent(targetLayer.getSource().getExtent(), 0.1);
     map.getView().fit(expandedExtent, {
         duration: 1000,
-        maxZoom: 19, // Sesuaikan nilai ini dengan tingkat zoom maksimum yang diinginkan
+        maxZoom: 19,
     });
 
-    // Panggil fungsi untuk menambahkan interaksi modify dan snap pada fitur target
-    addModifyInteraction(map, targetVectorSource);
+    // Menambahkan interaksi modify dan snap
+    addModifyInteraction(map, targetLayer.getSource());
 
-    // Mengambil elemen input form geom
+    // Mengupdate WKT pada input form geom
+    updateInputGeom(targetFeature);
+}
+
+// Fungsi untuk mengupdate input geom
+function updateInputGeom(targetFeature) {
     var inputGeom = document.getElementById("geom");
-
-    // Event listener untuk memperbarui nilai WKT saat nilai input berubah
+    var wkt = geojsonToWKT(targetFeature.geometry);
+    inputGeom.value = wkt;
     inputGeom.addEventListener("input", function () {
         var wkt = inputGeom.value;
-        // Lakukan sesuatu dengan nilai WKT yang diubah, jika perlu
+        // Lakukan sesuatu dengan nilai WKT yang diubah
     });
+}
 
-    // Pada saat pertama kali, tetapkan nilai WKT dari fitur target ke elemen input
-    var geometry = targetFeature.geometry;
-    var wkt = geojsonToWKT(geometry);
-    inputGeom.value = wkt;
+// Inisialisasi dan pemanggilan fungsi utama
+$.getJSON("/admin/kecamatan", function (geojsonData) {
+    var targetGid = geojsonData.data.features[0]["properties"]["gid"];
+    processGeojsonData(geojsonData, targetGid, map, overlays);
 });
+//end add polygon.
 
 // Buat instance LayerSwitcher
 const layerSwitcher = new LayerSwitcher({

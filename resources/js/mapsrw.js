@@ -60,50 +60,87 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 });
 
+var cache = {}; // Objek cache untuk menyimpan data GeoJSON
+
+// Fungsi untuk Mengambil Data GeoJSON Berdasarkan URL yang Dipilih
+function fetchGeoJsonData1(url) {
+    // Cek cache terlebih dahulu
+    if (cache[url]) {
+        return Promise.resolve(cache[url]);
+    }
+
+    return $.getJSON(url)
+        .then(function (response) {
+            if (response.data) {
+                var vectorSource = new VectorSource({
+                    features: new GeoJSON().readFeatures(response.data, {
+                        featureProjection: "EPSG:4326",
+                    }),
+                });
+                // Simpan data di cache
+                cache[url] = vectorSource;
+                return vectorSource;
+            } else {
+                throw new Error("Data GeoJSON tidak ditemukan dalam respons");
+            }
+        })
+        .catch(function (error) {
+            console.error("Request Failed:", error);
+            return null;
+        });
+}
+
+// Fungsi untuk Menangani Perubahan Layer
 document.getElementById("layerSelect").addEventListener("change", function () {
     var selectedLayer = this.value;
     var url;
 
-    if (selectedLayer === "bataspilar") {
-        url = "/admin/bataspilar"; // URL untuk data kecamatan
-    } else if (selectedLayer === "bataskota") {
-        url = "/admin/kota"; // URL untuk data kelurahan
-    } else if (selectedLayer === "bataskemantren") {
-        url = "/admin/kecamatan"; // URL untuk data kelurahan
-    } else if (selectedLayer === "bataskelurahan") {
-        url = "/admin/kelurahan"; // URL untuk data kelurahan
-    } else if (selectedLayer === "batasrw") {
-        url = "/admin/rw"; // URL untuk data kelurahan
-    } else {
-        return;
+    switch (selectedLayer) {
+        case "bataspilar":
+            url = "/admin/bataspilar";
+            break;
+        case "bataskota":
+            url = "/admin/kota";
+            break;
+        case "bataskemantren":
+            url = "/admin/kecamatan";
+            break;
+        case "bataskelurahan":
+            url = "/admin/kelurahan";
+            break;
+        case "batasrw":
+            url = "/admin/rw";
+            break;
+        default:
+            return;
     }
 
-    // Ambil data GeoJSON dari endpoint yang sesuai
-    $.getJSON(url, function (response) {
-        if (response.data) {
-            // Buat objek VectorSource dari data GeoJSON
-            var vectorSource = new VectorSource({
-                features: new GeoJSON().readFeatures(response.data, {
-                    featureProjection: "EPSG:4326",
-                }),
-            });
-
-            // Proses data yang diambil
+    // Ambil data GeoJSON dan proses
+    fetchGeoJsonData1(url).then(function (vectorSource) {
+        if (vectorSource) {
             processData(vectorSource);
-        } else {
-            console.error("Data GeoJSON tidak ditemukan dalam respons");
         }
-    }).fail(function (jqxhr, textStatus, error) {
-        console.error("Request Failed: " + textStatus + ", " + error);
     });
 });
 
+// Fungsi untuk Memproses Data GeoJSON
 function processData(vectorSource) {
-    // Proses data dari vectorSource
     var features = vectorSource.getFeatures();
-    var uniqueProperties = new Set();
+    var uniqueProperties = extractUniqueProperties(features);
 
-    // Ekstrak properti dari fitur
+    updatePropertySelect(uniqueProperties);
+
+    document
+        .getElementById("propertySelect")
+        .addEventListener("change", function () {
+            var selectedProperty = this.value;
+            processSelectedProperty(selectedProperty, features);
+        });
+}
+
+// Fungsi untuk Mengekstrak Properti Unik dari Fitur GeoJSON
+function extractUniqueProperties(features) {
+    var uniqueProperties = new Set();
     features.forEach(function (feature) {
         var properties = feature.getProperties();
         for (var key in properties) {
@@ -112,46 +149,46 @@ function processData(vectorSource) {
             }
         }
     });
+    return uniqueProperties;
+}
 
-    // Dapatkan elemen select untuk properti
+// Fungsi untuk Memperbarui Elemen Select Properti
+function updatePropertySelect(uniqueProperties) {
     var propertySelect = document.getElementById("propertySelect");
-    propertySelect.innerHTML = "<option>Pilih Properti</option>"; // Kosongkan opsi sebelumnya
+    propertySelect.innerHTML = "<option>Pilih Properti</option>";
 
-    // Tambahkan properti ke elemen select sebagai opsi
     uniqueProperties.forEach(function (property) {
         var option = document.createElement("option");
         option.value = property;
         option.text = property;
         propertySelect.appendChild(option);
     });
-
-    // Tambahkan event listener untuk elemen select properti
-    propertySelect.addEventListener("change", function () {
-        var selectedProperty = this.value;
-        processSelectedProperty(selectedProperty, features);
-    });
 }
 
+// Fungsi untuk Memproses Properti yang Dipilih
 function processSelectedProperty(selectedProperty, features) {
-    var propertyType = "";
+    var propertyType = determinePropertyType(selectedProperty, features);
+    updateOperatorSelect(propertyType);
+}
 
-    // Tentukan jenis data properti
+// Fungsi untuk Menentukan Jenis Properti
+function determinePropertyType(selectedProperty, features) {
+    var propertyType = "";
     features.forEach(function (feature) {
         var properties = feature.getProperties();
         if (properties.hasOwnProperty(selectedProperty)) {
             if (propertyType === "") {
-                if (typeof properties[selectedProperty] === "number") {
-                    propertyType = "number";
-                } else {
-                    propertyType = "string";
-                }
+                propertyType = typeof properties[selectedProperty];
             }
         }
     });
+    return propertyType;
+}
 
-    // Tentukan operator berdasarkan jenis data properti
+// Fungsi untuk Memperbarui Elemen Select Operator
+function updateOperatorSelect(propertyType) {
     var operatorSelect = document.getElementById("operatorSelect");
-    operatorSelect.innerHTML = "<option>Pilih Operator</option>"; // Kosongkan opsi sebelumnya
+    operatorSelect.innerHTML = "<option>Pilih Operator</option>";
 
     var operators = propertyType === "number" ? ["=", ">", "<"] : ["=", "LIKE"];
     operators.forEach(function (operator) {
@@ -165,160 +202,185 @@ function processSelectedProperty(selectedProperty, features) {
 // Event listener untuk tombol "Get Filter"
 // Variabel global untuk menyimpan referensi ke layer filter yang telah ditambahkan
 var previousFilterLayer = null;
+var cache = {}; // Objek cache untuk menyimpan data GeoJSON
 
-document
-    .getElementById("getFilterButton")
-    .addEventListener("click", function () {
-        var selectedLayer = document.getElementById("layerSelect").value;
-        var selectedProperty = document.getElementById("propertySelect").value;
-        var selectedOperator = document.getElementById("operatorSelect").value;
-        var inputValue = document.getElementById("valueInput").value;
+// Fungsi untuk Mengambil Data GeoJSON Berdasarkan Layer yang Dipilih
+function fetchGeoJsonData(url) {
+    // Cek cache terlebih dahulu
+    if (cache[url]) {
+        return Promise.resolve(cache[url]);
+    }
 
-        if (
-            selectedLayer &&
-            selectedProperty &&
-            selectedOperator &&
-            inputValue
-        ) {
-            var url;
-
-            if (selectedLayer === "bataspilar") {
-                url = "/admin/bataspilar"; // URL untuk data kecamatan
-            } else if (selectedLayer === "bataskota") {
-                url = "/admin/kota"; // URL untuk data kelurahan
-            } else if (selectedLayer === "bataskemantren") {
-                url = "/admin/kecamatan"; // URL untuk data kelurahan
-            } else if (selectedLayer === "bataskelurahan") {
-                url = "/admin/kelurahan"; // URL untuk data kelurahan
-            } else if (selectedLayer === "batasrw") {
-                url = "/admin/rw"; // URL untuk data kelurahan
+    return $.getJSON(url)
+        .then(function (response) {
+            if (response.data) {
+                var vectorSource = new VectorSource({
+                    features: new GeoJSON().readFeatures(response.data, {
+                        featureProjection: "EPSG:4326",
+                    }),
+                });
+                // Simpan data di cache
+                cache[url] = vectorSource;
+                return vectorSource;
             } else {
-                return;
+                throw new Error("Data GeoJSON tidak ditemukan dalam respons");
             }
+        })
+        .catch(function (error) {
+            console.error("Request Failed:", error);
+            return null;
+        });
+}
 
-            $.getJSON(url, function (response) {
-                if (response.data) {
-                    // Buat objek VectorSource dari data GeoJSON
-                    var vectorSource = new VectorSource({
-                        features: new GeoJSON().readFeatures(response.data, {
-                            featureProjection: "EPSG:4326",
-                        }),
-                    });
+// Fungsi untuk Memfilter Fitur Berdasarkan Properti, Operator, dan Nilai
+function filterFeatures(
+    vectorSource,
+    selectedProperty,
+    selectedOperator,
+    inputValue
+) {
+    return vectorSource.getFeatures().filter(function (feature) {
+        var value = feature.getProperties()[selectedProperty];
 
-                    // Filter fitur berdasarkan properti, operator, dan nilai
-                    var filteredFeatures = vectorSource
-                        .getFeatures()
-                        .filter(function (feature) {
-                            var properties = feature.getProperties();
-                            var value = properties[selectedProperty];
-
-                            switch (selectedOperator) {
-                                case "=":
-                                    return value == inputValue;
-                                case ">":
-                                    return value > inputValue;
-                                case "<":
-                                    return value < inputValue;
-                                case "LIKE":
-                                    return value
-                                        .toLowerCase()
-                                        .includes(inputValue.toLowerCase());
-                                default:
-                                    return false;
-                            }
-                        });
-
-                    // Buat VectorSource baru dengan fitur yang difilter
-                    var filteredSource = new VectorSource({
-                        features: filteredFeatures,
-                    });
-
-                    // Definisikan fungsi gaya (style function)
-                    function styleFunction(feature) {
-                        var geometryType = feature.getGeometry().getType();
-
-                        switch (geometryType) {
-                            case "Point":
-                                return new Style({
-                                    image: new Circle({
-                                        radius: 7,
-                                        fill: new Fill({
-                                            color: "rgba(255, 0, 0, 0.6)",
-                                        }),
-                                        stroke: new Stroke({
-                                            color: "red",
-                                            width: 2,
-                                        }),
-                                    }),
-                                });
-                            case "LineString":
-                                return new Style({
-                                    stroke: new Stroke({
-                                        color: "red",
-                                        width: 3,
-                                    }),
-                                });
-                            case "Polygon":
-                                return new Style({
-                                    stroke: new Stroke({
-                                        color: "red",
-                                        width: 2,
-                                    }),
-                                    fill: new Fill({
-                                        color: "rgba(0, 0, 255, 0.1)",
-                                    }),
-                                });
-                            default:
-                                return new Style({
-                                    stroke: new Stroke({
-                                        color: "black",
-                                        width: 1,
-                                    }),
-                                    fill: new Fill({
-                                        color: "rgba(0, 0, 0, 0.1)",
-                                    }),
-                                });
-                        }
-                    }
-
-                    // Buat layer vektor dari VectorSource
-                    var vectorLayer = new VectorLayer({
-                        title: "Hasil Filter",
-                        source: filteredSource,
-                        style: styleFunction, // Gunakan fungsi gaya
-                    });
-
-                    // Hapus layer filter sebelumnya jika ada
-                    if (previousFilterLayer) {
-                        map.removeLayer(previousFilterLayer);
-                    }
-
-                    // Tambahkan layer vektor ke peta
-                    map.addLayer(vectorLayer);
-
-                    // Simpan referensi ke layer yang baru ditambahkan
-                    previousFilterLayer = vectorLayer;
-
-                    // Fit map view to the extent of the filtered features
-                    var extent = filteredSource.getExtent();
-                    map.getView().fit(extent, { duration: 1000 });
-
-                    // Lakukan sesuatu dengan filteredSource
-                    console.log(filteredSource);
-                    // Contoh: Menampilkan hasil filter di console
-                    filteredFeatures.forEach(function (feature) {
-                        console.log(feature.getProperties());
-                    });
-                } else {
-                    console.error("Data GeoJSON tidak ditemukan dalam respons");
-                }
-            }).fail(function (jqxhr, textStatus, error) {
-                console.error("Request Failed: " + textStatus + ", " + error);
-            });
-        } else {
-            alert("Silakan pilih semua opsi dan masukkan nilai.");
+        switch (selectedOperator) {
+            case "=":
+                return value == inputValue;
+            case ">":
+                return value > inputValue;
+            case "<":
+                return value < inputValue;
+            case "LIKE":
+                return value.toLowerCase().includes(inputValue.toLowerCase());
+            default:
+                return false;
         }
     });
+}
+
+// Fungsi untuk Membuat Layer Vektor dari Fitur yang Difilter
+function createVectorLayer(filteredFeatures) {
+    var filteredSource = new VectorSource({
+        features: filteredFeatures,
+    });
+
+    return new VectorLayer({
+        title: "Hasil Filter",
+        source: filteredSource,
+        style: styleFunction, // Gunakan fungsi gaya
+    });
+}
+
+// Fungsi untuk Menentukan Gaya Berdasarkan Tipe Geometri
+function styleFunction(feature) {
+    var geometryType = feature.getGeometry().getType();
+
+    switch (geometryType) {
+        case "Point":
+            return new Style({
+                image: new Circle({
+                    radius: 7,
+                    fill: new Fill({
+                        color: "rgba(255, 0, 0, 0.6)",
+                    }),
+                    stroke: new Stroke({
+                        color: "red",
+                        width: 2,
+                    }),
+                }),
+            });
+        case "LineString":
+            return new Style({
+                stroke: new Stroke({
+                    color: "red",
+                    width: 3,
+                }),
+            });
+        case "Polygon":
+            return new Style({
+                stroke: new Stroke({
+                    color: "red",
+                    width: 2,
+                }),
+                fill: new Fill({
+                    color: "rgba(0, 0, 255, 0.1)",
+                }),
+            });
+        default:
+            return new Style({
+                stroke: new Stroke({
+                    color: "black",
+                    width: 1,
+                }),
+                fill: new Fill({
+                    color: "rgba(0, 0, 0, 0.1)",
+                }),
+            });
+    }
+}
+
+// Fungsi untuk Mengatur Tampilan Layer di Peta
+function updateMapLayer(vectorLayer) {
+    if (previousFilterLayer) {
+        map.removeLayer(previousFilterLayer);
+    }
+
+    map.addLayer(vectorLayer);
+    previousFilterLayer = vectorLayer;
+
+    var extent = vectorLayer.getSource().getExtent();
+    map.getView().fit(extent, { duration: 1000 });
+}
+
+// Fungsi Utama yang Dijalankan Saat Tombol "Get Filter" Diklik
+function onGetFilterButtonClick() {
+    var selectedLayer = document.getElementById("layerSelect").value;
+    var selectedProperty = document.getElementById("propertySelect").value;
+    var selectedOperator = document.getElementById("operatorSelect").value;
+    var inputValue = document.getElementById("valueInput").value;
+
+    if (selectedLayer && selectedProperty && selectedOperator && inputValue) {
+        var url;
+        switch (selectedLayer) {
+            case "bataspilar":
+                url = "/admin/bataspilar";
+                break;
+            case "bataskota":
+                url = "/admin/kota";
+                break;
+            case "bataskemantren":
+                url = "/admin/kecamatan";
+                break;
+            case "bataskelurahan":
+                url = "/admin/kelurahan";
+                break;
+            case "batasrw":
+                url = "/admin/rw";
+                break;
+            default:
+                return;
+        }
+
+        fetchGeoJsonData(url).then(function (vectorSource) {
+            if (vectorSource) {
+                var filteredFeatures = filterFeatures(
+                    vectorSource,
+                    selectedProperty,
+                    selectedOperator,
+                    inputValue
+                );
+                var vectorLayer = createVectorLayer(filteredFeatures);
+                updateMapLayer(vectorLayer);
+            }
+        });
+    } else {
+        alert("Silakan pilih semua opsi dan masukkan nilai.");
+    }
+}
+
+// Event listener untuk tombol "Get Filter"
+document
+    .getElementById("getFilterButton")
+    .addEventListener("click", onGetFilterButtonClick);
 
 function adjustMapHeight() {
     const cardBodyElement = document.querySelector(".card-body");
@@ -424,114 +486,117 @@ map.addLayer(overlays);
 var highlightedFeature = null; // Variable to store the currently highlighted feature
 
 // Ambil data GeoJSON dari endpoint Anda
-$.getJSON("/admin/rw", function (response) {
-    if (response.data) {
-        // Buat objek VectorSource dari data GeoJSON
-        var vectorSource = new VectorSource({
-            features: new GeoJSON().readFeatures(response.data, {
-                featureProjection: "EPSG:4326",
-            }),
-        });
+// Function to initialize the vector layer
+function createVectorLayer1(responseData) {
+    const vectorSource = new VectorSource({
+        features: new GeoJSON().readFeatures(responseData, {
+            featureProjection: "EPSG:4326",
+        }),
+    });
 
-        // Buat layer vektor dari VectorSource
-        var vectorLayer = new VectorLayer({
-            title: "Kelurahan",
-            source: vectorSource,
-            style: new Style({
-                stroke: new Stroke({
-                    color: "blue",
-                    width: 2,
-                }),
-                fill: new Fill({
-                    color: "rgba(0, 0, 255, 0.1)",
-                }),
-            }),
-        });
-
-        // Tambahkan layer vektor ke peta
-        overlays.getLayers().push(vectorLayer);
-
-        // Sesuaikan tampilan peta agar menampilkan data GeoJSON
-        var extent = vectorSource.getExtent();
-        map.getView().fit(extent, { duration: 1000 });
-
-        // Define a style for the highlighted feature
-        var highlightStyle = new Style({
+    const vectorLayer = new VectorLayer({
+        title: "RW",
+        source: vectorSource,
+        style: new Style({
             stroke: new Stroke({
-                color: "yellow",
-                width: 3,
+                color: "blue",
+                width: 2,
             }),
             fill: new Fill({
-                color: "rgba(255, 255, 0, 0.3)",
+                color: "rgba(0, 0, 255, 0.1)",
             }),
-        });
+        }),
+    });
 
-        // Tambahkan event listener click pada peta
-        map.on("click", function (event) {
-            var clickedFeature = null;
+    return { vectorSource, vectorLayer };
+}
 
-            // Detect feature under click
-            map.forEachFeatureAtPixel(event.pixel, function (feature, layer) {
-                // Jika fitur ada di layer vectorLayer
-                if (layer === vectorLayer) {
-                    clickedFeature = feature;
-                    return true; // Break the loop after finding the feature
-                }
-            });
+// Function to add vector layer to map and fit the view
+function addLayerToMap1(vectorLayer, vectorSource) {
+    overlays.getLayers().push(vectorLayer);
 
-            if (clickedFeature) {
-                // Reset previous highlight
-                if (highlightedFeature) {
-                    highlightedFeature.setStyle(null);
-                }
+    const extent = vectorSource.getExtent();
+    map.getView().fit(extent, { duration: 1000 });
+}
 
-                // Highlight the clicked feature
-                clickedFeature.setStyle(highlightStyle);
-                highlightedFeature = clickedFeature;
+// Function to handle feature highlighting on click
+function handleMapClick1(vectorLayer) {
+    let highlightedFeature = null;
+    const highlightStyle = new Style({
+        stroke: new Stroke({
+            color: "yellow",
+            width: 3,
+        }),
+        fill: new Fill({
+            color: "rgba(255, 255, 0, 0.3)",
+        }),
+    });
 
-                // Ekstrak properti dari fitur yang diklik
-                var properties = clickedFeature.getProperties();
+    map.on("click", function (event) {
+        let clickedFeature = null;
 
-                // Buat string untuk menampilkan properti
-                var info =
-                    "<table class='table table-bordered m-0'><thead><tr><th>Property</th><th>Value</th></tr></thead><tbody>";
-                for (var key in properties) {
-                    if (properties.hasOwnProperty(key) && key !== "geometry") {
-                        var value = properties[key];
-
-                        // Tangani atribut beritaacara
-                        if (key === "beritaacara") {
-                            value =
-                                "<a href='" +
-                                value +
-                                "' target='_blank'>link berita acara</a>";
-                        }
-
-                        info +=
-                            "<tr><td>" +
-                            key +
-                            "</td><td>" +
-                            value +
-                            "</td></tr>";
-                    }
-                }
-                info += "</tbody></table>";
-
-                // Tampilkan informasi properti di dalam card body
-                document.querySelector("#attribute .card-body").innerHTML =
-                    info;
-
-                // Tampilkan tabel atribut
-                document.getElementById("attribute").style.display = "block";
-            } else {
-                // Sembunyikan tabel atribut jika tidak ada fitur yang diklik
-                document.getElementById("attribute").style.display = "none";
+        map.forEachFeatureAtPixel(event.pixel, function (feature, layer) {
+            if (layer === vectorLayer) {
+                clickedFeature = feature;
+                return true;
             }
         });
-    } else {
-        console.error("Data GeoJSON tidak ditemukan dalam respons");
+
+        if (clickedFeature) {
+            if (highlightedFeature) {
+                highlightedFeature.setStyle(null);
+            }
+
+            clickedFeature.setStyle(highlightStyle);
+            highlightedFeature = clickedFeature;
+
+            displayFeatureProperties1(clickedFeature);
+        } else {
+            document.getElementById("attribute").style.display = "none";
+        }
+    });
+}
+
+// Function to display feature properties in the attribute table
+function displayFeatureProperties1(feature) {
+    const properties = feature.getProperties();
+    let info =
+        "<table class='table table-bordered m-0'><thead><tr><th>Keterangan</th><th>Detail</th></tr></thead><tbody>";
+
+    for (const key in properties) {
+        if (properties.hasOwnProperty(key) && key !== "geometry") {
+            let value = properties[key];
+
+            if (key === "beritaacara") {
+                value = `<a href='${value}' target='_blank'>link berita acara</a>`;
+            }
+
+            info += `<tr><td>${key}</td><td>${value}</td></tr>`;
+        }
     }
-});
+    info += "</tbody></table>";
+
+    document.querySelector("#attribute .card-body").innerHTML = info;
+    document.getElementById("attribute").style.display = "block";
+}
+
+// Main function to fetch data and initialize map features
+function initializeMap1() {
+    $.getJSON("/admin/rw", function (response) {
+        if (response.data) {
+            const { vectorSource, vectorLayer } = createVectorLayer1(
+                response.data
+            );
+            addLayerToMap1(vectorLayer, vectorSource);
+            handleMapClick1(vectorLayer);
+        } else {
+            console.error("Data GeoJSON tidak ditemukan dalam respons");
+        }
+    });
+}
+
+// Initialize the map features on page load or when required
+initializeMap1();
 
 // Buat instance LayerSwitcher
 const layerSwitcher = new LayerSwitcher({

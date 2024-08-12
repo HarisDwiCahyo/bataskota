@@ -566,6 +566,10 @@
             <div class="app-main">
 
                 <div id="map">
+                    <div id="popup" class="ol-popup">
+                        <a href="#" id="popup-closer" class="ol-popup-closer"></a>
+                        <div id="popup-content"></div>
+                    </div>
                     <div id="buttonnav">
                         <div class="col-md-2">
                             <div class="col-md-2">
@@ -581,7 +585,7 @@
                     </div>
                 </div>
                 <div id="attribute" class="card text-center lobipanel-minimize ">
-                    <div class="card-header" style="color: rgb(10, 84, 3); font-weight: bold">Tabel Atribut</div>
+                    <div class="card-header" style="color: rgb(10, 84, 3); font-weight: bold">Tabel Informasi</div>
                     <div class="card-body">
                     </div>
                 </div>

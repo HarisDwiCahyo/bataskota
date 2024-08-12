@@ -79,74 +79,90 @@ var baseGroup = new Group({
 map.addLayer(baseGroup);
 
 // Mendapatkan data GeoJSON dari sumber data Anda
-$.getJSON("/bataspilar", function (geojsonData) {
-    // Ambil nilai gid dari data pertama
-    var targetGid = data[0]["gid"];
+// Asinkronus loading dan simple geometry
+(async function () {
+    try {
+        const response = await fetch("/admin/bataspilar");
+        const geojsonData = await response.json();
 
-    // Filter data GeoJSON berdasarkan gid
-    var filteredFeatures = geojsonData.data.features.filter(function (feature) {
-        return feature.properties.gid === targetGid;
+        // Ambil nilai gid dari data pertama
+        const targetGid = data[0]["gid"];
+
+        // Filter data GeoJSON di frontend (sebaiknya lakukan di backend)
+        const filteredFeatures = geojsonData.data.features.filter(
+            (feature) => feature.properties.gid === targetGid
+        );
+
+        // Simplifikasi data GeoJSON (jika memungkinkan)
+        const simplifiedFeatures = simplifyGeoJSON(filteredFeatures);
+
+        const filteredGeojsonData = {
+            type: "FeatureCollection",
+            features: simplifiedFeatures,
+        };
+
+        const geojsonFormat = new GeoJSON();
+        const features = geojsonFormat.readFeatures(filteredGeojsonData, {
+            featureProjection: "EPSG:3857",
+        });
+
+        const vectorSource = new VectorSource({
+            features: features,
+        });
+
+        const geojsonLayer = new VectorLayer({
+            title: "Titik Batas Pilar",
+            source: vectorSource,
+            style: createStyleFunction(),
+        });
+
+        overlays.getLayers().push(geojsonLayer);
+
+        const extent = vectorSource.getExtent();
+        const expandedExtent = buffer(extent, getWidth(extent) * 0.1);
+
+        map.getView().fit(expandedExtent, {
+            duration: 1000,
+            maxZoom: 19,
+        });
+    } catch (error) {
+        console.error("Error loading GeoJSON data:", error);
+    }
+})();
+
+// Simplify GeoJSON function (contoh sederhana)
+function simplifyGeoJSON(features) {
+    return features.map((feature) => {
+        // Implementasikan metode simplifikasi geometri di sini
+        return feature;
     });
+}
 
-    // Membuat objek GeoJSON dengan fitur yang difilter
-    var filteredGeojsonData = {
-        type: "FeatureCollection",
-        features: filteredFeatures,
+// Create style function untuk optimalisasi
+function createStyleFunction() {
+    return function (feature) {
+        const geometryType = feature.getGeometry().getType();
+        if (geometryType === "Point") {
+            return new Style({
+                image: new Circle({
+                    radius: 7,
+                    fill: new Fill({ color: "red" }),
+                    stroke: new Stroke({ color: "white", width: 2 }),
+                }),
+            });
+        } else {
+            return new Style({
+                stroke: new Stroke({
+                    color: "blue",
+                    width: 2,
+                }),
+                fill: new Fill({
+                    color: "rgba(0, 0, 255, 0.1)",
+                }),
+            });
+        }
     };
-
-    // Membuat fitur GeoJSON
-    var geojsonFormat = new GeoJSON();
-    var features = geojsonFormat.readFeatures(filteredGeojsonData, {
-        featureProjection: "EPSG:3857", // Adjust this projection as needed
-    });
-
-    var vectorSource = new VectorSource({
-        features: features,
-    });
-
-    // Membuat layer vektor dari fitur GeoJSON
-    var geojsonLayer = new VectorLayer({
-        title: "Titik Batas Pilar",
-        source: vectorSource,
-        style: function (feature) {
-            var geometryType = feature.getGeometry().getType();
-            if (geometryType === "Point") {
-                return new Style({
-                    image: new Circle({
-                        radius: 7,
-                        fill: new Fill({ color: "red" }),
-                        stroke: new Stroke({ color: "white", width: 2 }),
-                    }),
-                });
-            } else {
-                return new Style({
-                    stroke: new Stroke({
-                        color: "blue",
-                        width: 2,
-                    }),
-                    fill: new Fill({
-                        color: "rgba(0, 0, 255, 0.1)",
-                    }),
-                });
-            }
-        },
-    });
-
-    // Menambahkan layer GeoJSON ke dalam grup overlays
-    overlays.getLayers().push(geojsonLayer);
-
-    // Mendapatkan extent dari fitur yang difilter
-    var extent = vectorSource.getExtent();
-
-    // Memperluas extent sedikit untuk zoom out
-    var expandedExtent = buffer(extent, getWidth(extent) * 0.1); // 10% buffer
-
-    // Mengatur tampilan peta agar sesuai dengan expandedExtent
-    map.getView().fit(expandedExtent, {
-        duration: 1000,
-        maxZoom: 19, // Sesuaikan nilai ini dengan tingkat zoom maksimum yang diinginkan
-    });
-});
+}
 
 // Contoh penggunaan
 $.getJSON("/admin/bataspilar", function (geojsonData) {

@@ -1257,57 +1257,58 @@ map.on("click", function (event) {
     var clickedFeature = null;
     var clickedLayer = null;
 
-    // Detect feature under click
-    map.forEachFeatureAtPixel(event.pixel, function (feature, layer) {
-        // Jika fitur ada di layer kecamatanLayer, rwLayer, kelurahanLayer, kotaLayer, atau pilarLayer
-        if (
-            layer === kecamatanLayer ||
-            layer === rwLayer ||
-            layer === kelurahanLayer ||
-            layer === kotaLayer ||
-            layer === pilarLayer
-        ) {
-            clickedFeature = feature;
-            clickedLayer = layer;
-            return true; // Break the loop after finding the feature
-        }
-    });
+    // Fungsi untuk mendeteksi fitur yang diklik
+    function detectClickedFeature(event) {
+        map.forEachFeatureAtPixel(event.pixel, function (feature, layer) {
+            if (
+                layer === kecamatanLayer ||
+                layer === rwLayer ||
+                layer === kelurahanLayer ||
+                layer === kotaLayer ||
+                layer === pilarLayer
+            ) {
+                clickedFeature = feature;
+                clickedLayer = layer;
+                return true; // Hentikan loop setelah menemukan fitur
+            }
+        });
+    }
 
-    if (clickedFeature) {
-        // Reset previous highlight
-        if (highlightedFeature) {
+    // Fungsi untuk mereset highlight sebelumnya
+    function resetHighlight(feature) {
+        if (feature) {
             var defaultStyle = new Style({
                 stroke: new Stroke({
                     color:
-                        highlightedFeature.get("layer") === "kecamatan"
+                        feature.get("layer") === "kecamatan"
                             ? "blue"
-                            : highlightedFeature.get("layer") === "rw"
+                            : feature.get("layer") === "rw"
                             ? "green"
-                            : highlightedFeature.get("layer") === "kelurahan"
+                            : feature.get("layer") === "kelurahan"
                             ? "black"
-                            : highlightedFeature.get("layer") === "kota"
+                            : feature.get("layer") === "kota"
                             ? "purple"
-                            : highlightedFeature.get("layer") === "pilar"
+                            : feature.get("layer") === "pilar"
                             ? "blue"
-                            : "gray", // Color for other layers
+                            : "gray",
                     width: 2,
                 }),
                 fill: new Fill({
                     color:
-                        highlightedFeature.get("layer") === "kecamatan"
+                        feature.get("layer") === "kecamatan"
                             ? "rgba(0, 0, 255, 0.1)"
-                            : highlightedFeature.get("layer") === "rw"
+                            : feature.get("layer") === "rw"
                             ? "rgba(0, 255, 0, 0.1)"
-                            : highlightedFeature.get("layer") === "kelurahan"
+                            : feature.get("layer") === "kelurahan"
                             ? "rgba(255, 0, 0, 0.1)"
-                            : highlightedFeature.get("layer") === "kota"
+                            : feature.get("layer") === "kota"
                             ? "rgba(128, 0, 128, 0.1)"
-                            : highlightedFeature.get("layer") === "pilar"
+                            : feature.get("layer") === "pilar"
                             ? "rgba(87, 116, 139, 0.1)"
-                            : "rgba(128, 128, 128, 0.1)", // Fill color for other layers
+                            : "rgba(128, 128, 128, 0.1)",
                 }),
                 image:
-                    highlightedFeature.get("layer") === "pilar"
+                    feature.get("layer") === "pilar"
                         ? new Circle({
                               radius: 5,
                               fill: new Fill({
@@ -1320,10 +1321,12 @@ map.on("click", function (event) {
                           })
                         : undefined,
             });
-            highlightedFeature.setStyle(defaultStyle);
+            feature.setStyle(defaultStyle);
         }
+    }
 
-        // Highlight the clicked feature
+    // Fungsi untuk menyorot fitur yang diklik
+    function highlightFeature(feature, layer) {
         var highlightStyle = new Style({
             stroke: new Stroke({
                 color: "yellow",
@@ -1333,7 +1336,7 @@ map.on("click", function (event) {
                 color: "rgba(255, 255, 0, 0.3)",
             }),
             image:
-                clickedLayer === pilarLayer
+                layer === pilarLayer
                     ? new Circle({
                           radius: 7,
                           fill: new Fill({
@@ -1346,9 +1349,64 @@ map.on("click", function (event) {
                       })
                     : undefined,
         });
-        clickedFeature.setStyle(highlightStyle);
+        feature.setStyle(highlightStyle);
+    }
 
-        // Set layer property to determine default style later
+    // Fungsi untuk menampilkan informasi atribut
+    function showFeatureInfo(feature) {
+        var properties = feature.getProperties();
+        var info =
+            "<table class='table table-bordered m-0' style='background-color: #e8f5e9; border-color: #388e3c;'>" +
+            "<thead style='background-color: #388e3c; color: white;'>" +
+            "<tr><th>Keterangan</th><th>Detail</th></tr></thead><tbody>";
+
+        for (var key in properties) {
+            if (
+                properties.hasOwnProperty(key) &&
+                key !== "geometry" &&
+                key !== "gid" &&
+                key !== "srsid"
+            ) {
+                var value = properties[key];
+
+                // Tangani atribut foto
+                if (key === "foto") {
+                    var imageUrl = "/upload/foto/" + value;
+                    value =
+                        "<a href='" +
+                        imageUrl +
+                        "' target='_blank'><img src='" +
+                        imageUrl +
+                        "' alt='Foto' style='width: 100px; height: auto;'/></a>";
+                } else if (key === "beritaacara") {
+                    value =
+                        "<a href='" +
+                        value +
+                        "' target='_blank'>link berita acara</a>";
+                }
+
+                info +=
+                    "<tr style='border-color: #388e3c;'><td style='background-color: #c8e6c9;'>" +
+                    key +
+                    "</td><td style='background-color: #f1f8e9;'>" +
+                    value +
+                    "</td></tr>";
+            }
+        }
+        info += "</tbody></table>";
+
+        document.querySelector("#attribute .card-body").innerHTML = info;
+        document.getElementById("attribute").style.display = "block";
+    }
+
+    // Deteksi fitur yang diklik
+    detectClickedFeature(event);
+
+    if (clickedFeature) {
+        resetHighlight(highlightedFeature);
+        highlightFeature(clickedFeature, clickedLayer);
+
+        // Set properti layer untuk menentukan gaya default nanti
         if (clickedLayer === kecamatanLayer) {
             clickedFeature.set("layer", "kecamatan");
         } else if (clickedLayer === rwLayer) {
@@ -1362,53 +1420,190 @@ map.on("click", function (event) {
         }
 
         highlightedFeature = clickedFeature;
-
-        // Ekstrak properti dari fitur yang diklik
-        var properties = clickedFeature.getProperties();
-
-        // Buat string untuk menampilkan properti
-        var info =
-            "<table class='table table-bordered m-0'><thead><tr><th>Property</th><th>Value</th></tr></thead><tbody>";
-        for (var key in properties) {
-            if (properties.hasOwnProperty(key) && key !== "geometry") {
-                var value = properties[key];
-
-                // Tangani atribut foto
-                if (key === "foto") {
-                    var imageUrl = "/upload/foto/" + value;
-                    value =
-                        "<a href='" +
-                        imageUrl +
-                        "' target='_blank'><img src='" +
-                        imageUrl +
-                        "' alt='Foto' style='width: 100px; height: auto;'/></a>";
-                }
-
-                // Tangani atribut beritaacara
-                else if (key === "beritaacara") {
-                    value =
-                        "<a href='" +
-                        value +
-                        "' target='_blank'>link berita acara</a>";
-                }
-
-                info += "<tr><td>" + key + "</td><td>" + value + "</td></tr>";
-            }
-        }
-        info += "</tbody></table>";
-
-        // Tampilkan informasi properti di dalam card body
-        document.querySelector("#attribute .card-body").innerHTML = info;
-
-        // Tampilkan tabel atribut
-        document.getElementById("attribute").style.display = "block";
+        showFeatureInfo(clickedFeature);
     } else {
-        // Sembunyikan tabel atribut jika tidak ada fitur yang diklik
         document.getElementById("attribute").style.display = "none";
     }
 });
 
-// Buat instance LayerSwitcher
+// Create an overlay to anchor the popup to the map.
+var container = document.getElementById("popup");
+var content = document.getElementById("popup-content");
+var closer = document.getElementById("popup-closer");
+
+var overlay = new Overlay({
+    element: container,
+    autoPan: true,
+    autoPanAnimation: {
+        duration: 250,
+    },
+});
+
+map.addOverlay(overlay);
+
+closer.onclick = function () {
+    overlay.setPosition(undefined);
+    closer.blur();
+    return false;
+};
+
+map.on("click", function (event) {
+    var clickedFeature = null;
+    var clickedLayer = null;
+
+    // Check if a feature was clicked, and if it belongs to one of the layers
+    map.forEachFeatureAtPixel(event.pixel, function (feature, layer) {
+        if (
+            layer === pilarLayer ||
+            layer === kecamatanLayer ||
+            layer === kotaLayer ||
+            layer === kelurahanLayer ||
+            layer === rwLayer
+        ) {
+            clickedFeature = feature;
+            clickedLayer = layer;
+            return true; // Stop iteration once the feature is found
+        }
+    });
+
+    if (clickedFeature) {
+        var properties = clickedFeature.getProperties();
+        var coordinates = event.coordinate;
+
+        // Initialize the HTML content for the popup
+        var info = "<div style='text-align: center;'>";
+
+        if (clickedLayer === pilarLayer) {
+            // Display photo if available
+            if (properties.foto) {
+                var imageUrl = "/upload/foto/" + properties.foto;
+                info += `
+                    <div style='width: 200px; height: 150px; overflow: hidden; margin-bottom: 10px;'>
+                        <a href='${imageUrl}' target='_blank'>
+                            <img src='${imageUrl}' alt='Foto' style='width: 100%; height: auto;'/>
+                        </a>
+                    </div>`;
+            }
+
+            // Display information for pilarLayer
+            info += `
+                <table style='margin: 0 auto; border-collapse: collapse; width: 100%;'>
+                    <tr>
+                        <td style='padding: 5px; border: 1px solid #ddd;'><strong>No Pilar</strong></td>
+                        <td style='padding: 5px; border: 1px solid #ddd;'>${
+                            properties.nopilar || "N/A"
+                        }</td>
+                    </tr>
+                    <tr>
+                        <td style='padding: 5px; border: 1px solid #ddd;'><strong>Koordinat</strong></td>
+                        <td style='padding: 5px; border: 1px solid #ddd;'>${coordinates[1].toFixed(
+                            5
+                        )}, ${coordinates[0].toFixed(5)}</td>
+                    </tr>
+                    <tr>
+                        <td colspan='2' style='padding: 5px; border: 1px solid #ddd;'>
+                            <a href='https://www.google.com/maps/dir/?api=1&destination=${
+                                coordinates[1]
+                            },${coordinates[0]}' target='_blank'>
+                                Rute ke lokasi
+                            </a>
+                        </td>
+                    </tr>
+                </table>`;
+        } else if (clickedLayer === kecamatanLayer) {
+            // Display information for kecamatanLayer
+            info += `
+                <table style='margin: 0 auto; border-collapse: collapse; width: 100%;'>
+                    <tr>
+                        <td style='padding: 5px; border: 1px solid #ddd;'><strong>Nama Kecamatan</strong></td>
+                        <td style='padding: 5px; border: 1px solid #ddd;'>${
+                            properties.kemantren || "N/A"
+                        }</td>
+                    </tr>
+                    <tr>
+                        <td style='padding: 5px; border: 1px solid #ddd;'><strong>Kode Kecamatan</strong></td>
+                        <td style='padding: 5px; border: 1px solid #ddd;'>${
+                            properties.kodekecamatan || "N/A"
+                        }</td>
+                    </tr>
+                </table>`;
+        } else if (clickedLayer === kotaLayer) {
+            // Display information for kotaLayer
+            info += `
+                <table style='margin: 0 auto; border-collapse: collapse; width: 100%;'>
+                    <tr>
+                        <td style='padding: 5px; border: 1px solid #ddd;'><strong>Nama Kota</strong></td>
+                        <td style='padding: 5px; border: 1px solid #ddd;'>${
+                            properties.kota || "N/A"
+                        }</td>
+                    </tr>
+                    <tr>
+                        <td style='padding: 5px; border: 1px solid #ddd;'><strong>Kode Kota</strong></td>
+                        <td style='padding: 5px; border: 1px solid #ddd;'>${
+                            properties.kodekota || "N/A"
+                        }</td>
+                    </tr>
+                </table>`;
+        } else if (clickedLayer === kelurahanLayer) {
+            // Display information for kelurahanLayer
+            info += `
+                <table style='margin: 0 auto; border-collapse: collapse; width: 100%;'>
+                    <tr>
+                        <td style='padding: 5px; border: 1px solid #ddd;'><strong>Nama Kemantren</strong></td>
+                        <td style='padding: 5px; border: 1px solid #ddd;'>${
+                            properties.kemantren || "N/A"
+                        }</td>
+                    </tr>
+                    <tr>
+                        <td style='padding: 5px; border: 1px solid #ddd;'><strong>Nama Kelurahan</strong></td>
+                        <td style='padding: 5px; border: 1px solid #ddd;'>${
+                            properties.kelurahan || "N/A"
+                        }</td>
+                    </tr>
+                    <tr>
+                        <td style='padding: 5px; border: 1px solid #ddd;'><strong>Kode Kelurahan</strong></td>
+                        <td style='padding: 5px; border: 1px solid #ddd;'>${
+                            properties.kodekelurahan || "N/A"
+                        }</td>
+                    </tr>
+                </table>`;
+        } else if (clickedLayer === rwLayer) {
+            // Display information for rwLayer
+            info += `
+                <table style='margin: 0 auto; border-collapse: collapse; width: 100%;'>
+                    <tr>
+                        <td style='padding: 5px; border: 1px solid #ddd;'><strong>Nama Kemantren</strong></td>
+                        <td style='padding: 5px; border: 1px solid #ddd;'>${
+                            properties.kemantren || "N/A"
+                        }</td>
+                    </tr>
+                    <tr>
+                        <td style='padding: 5px; border: 1px solid #ddd;'><strong>Nama Kelurahan</strong></td>
+                        <td style='padding: 5px; border: 1px solid #ddd;'>${
+                            properties.kelurahan || "N/A"
+                        }</td>
+                    </tr>
+                    <tr>
+                        <td style='padding: 5px; border: 1px solid #ddd;'><strong>RW</strong></td>
+                        <td style='padding: 5px; border: 1px solid #ddd;'>${
+                            properties.rw || "N/A"
+                        }</td>
+                    </tr>
+                </table>`;
+        }
+
+        info += "</div>";
+
+        // Show the info in the popup
+        content.innerHTML = info;
+        overlay.setPosition(event.coordinate);
+    } else {
+        overlay.setPosition(undefined); // Hide the popup if no feature is clicked
+    }
+});
+
+//end popup
+
 const layerSwitcher = new LayerSwitcher({
     tipLabel: "Show Layers",
     // collapseTipLabel: "Hide Layers",

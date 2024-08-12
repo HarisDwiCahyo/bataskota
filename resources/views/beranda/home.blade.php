@@ -16,10 +16,10 @@
                                 <span>Si Batas Pintar</span>
                             </h2>
                             <p class="animate__animated animate__fadeInUp">
-                                Si Batas Pintar adalah sistem informasi yang menyediakan data
-                                pilar batas dan batas wilayah di Kota Yogyakarta. Sistem ini
-                                memudahkan masyarakat dan pemerintah dalam mengakses informasi
-                                terkini dan akurat mengenai batas administratif kota.
+                                Si Batas Pintar adalah sistem informasi berbasis peta interaktif yang menyediakan <br> data
+                                batas
+                                wilayah
+                                dan pilar batas di wilayah Kota Yogyakarta
                             </p>
                             <a href="#services" class="btn-get-started animate__animated animate__fadeInUp scrollto">Read
                                 More</a>
@@ -36,7 +36,7 @@
                             </h2>
                             <p class="animate__animated animate__fadeInUp">
                                 Si Batas Pintar adalah peta interaktif yang menampilkan batas
-                                administratif dan pilar batas di Kota Yogyakarta. Fitur
+                                administratif dan pilar batas di Kota Yogyakarta. <br> Fitur
                                 utamanya termasuk pencarian lokasi, zoom, pengukuran,
                                 informasi feature, dan pilihan basemap.
                             </p>
@@ -55,7 +55,7 @@
                             </h2>
                             <p class="animate__animated animate__fadeInUp">
                                 Aplikasi Si Batas Pintar menyediakan informasi akurat tentang
-                                batas administratif dan pilar di Kota Yogyakarta. Dengan fitur
+                                batas administratif dan pilar di Kota Yogyakarta. <br>Dengan fitur
                                 pencarian, zoom, pengukuran, informasi, dan basemap, pengguna
                                 dapat dengan mudah menemukan dan mengelola lokasi.
                             </p>

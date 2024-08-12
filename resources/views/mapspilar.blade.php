@@ -31,7 +31,7 @@
                             </button> --}}
                         </div>
                         <div id="attribute" class="card text-center lobipanel-minimize">
-                            <div class="card-header" style="color: rgb(10, 84, 3); font-weight: bold">Tabel Atribut</div>
+                            <div class="card-header" style="color: rgb(10, 84, 3); font-weight: bold">Tabel Informasi</div>
                             <div class="card-body">
                             </div>
                         </div>

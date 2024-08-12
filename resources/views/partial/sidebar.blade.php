@@ -83,7 +83,7 @@
                         <span class="has-icon">
                             <i class="icon-map6"></i>
                         </span>
-                        <span class="nav-title">Data Batas Pilar</span>
+                        <span class="nav-title">Data Pilar Batas</span>
                     </a>
                     <ul aria-expanded="false">
                         <li>
