@@ -21,6 +21,7 @@ use App\Models\RwModel;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 
 class HomeController extends Controller
@@ -55,13 +56,30 @@ class HomeController extends Controller
     //Batas Pilar
     public function bataspilar()
     {
-        $bataspilar = DB::select("SELECT gid, kemantren, kelurahan, kondisi, east, south, nopilar, northing, easting, up, peraturan, perbatasan, beritaacara, alamat, pembuatan, pemeliharaan,foto, ST_AsGeoJSON(geom) AS geom FROM pilarbatas ");
+        $data = null;
+        DB::beginTransaction();
+        try {
+            // Melakukan query untuk mendapatkan data pilar batas
+            $data = DB::select("SELECT gid, kemantren, kelurahan, kondisi, east, south, nopilar, northing, easting, up, peraturan, perbatasan, beritaacara, alamat, pembuatan, pemeliharaan, foto, ST_AsGeoJSON(geom) AS geom FROM pilarbatas");
 
-        // Konversi hasil query menjadi collection
-        $bataspilarCollection = collect($bataspilar);
+            // Konversi hasil query menjadi collection
+            $bataspilarCollection = collect($data);
 
-        // Menggunakan resource collection untuk mengubah data menjadi format GeoJSON
-        return new BatasPilar($bataspilarCollection);
+            // Mengosongkan cache jika diperlukan
+            Cache::flush();
+
+            // Commit transaksi untuk menyimpan perubahan pada database
+            DB::commit();
+
+            // Menggunakan resource collection untuk mengubah data menjadi format GeoJSON
+            return new BatasPilar($bataspilarCollection);
+        } catch (\Throwable $th) {
+            // Rollback transaksi jika terjadi kesalahan
+            DB::rollBack();
+
+            // Opsional: lempar kembali pengecualian untuk penanganan lebih lanjut
+            // throw $th;
+        }
     }
     public function historisbataspilar()
     {
@@ -75,14 +93,32 @@ class HomeController extends Controller
     }
     public function kota()
     {
-        $kota = DB::select("SELECT gid, kota, srsid, kodekota, peraturan, beritaacara, batasutara, batasbarat, batasselatan, batastimur, ST_AsGeoJSON(geom) AS geom FROM kota ");
+        $data = null;
+        DB::beginTransaction();
+        try {
+            // Melakukan query untuk mendapatkan data kota
+            $data = DB::select("SELECT gid, kota, srsid, kodekota, peraturan, beritaacara, batasutara, batasbarat, batasselatan, batastimur, ST_AsGeoJSON(geom) AS geom FROM kota");
 
-        // Konversi hasil query menjadi collection
-        $kotaCollection = collect($kota);
+            // Konversi hasil query menjadi collection
+            $kotaCollection = collect($data);
 
-        // Menggunakan resource collection untuk mengubah data menjadi format GeoJSON
-        return new Kota($kotaCollection);
+            // Mengosongkan cache jika diperlukan
+            Cache::flush();
+
+            // Commit transaksi untuk menyimpan perubahan pada database
+            DB::commit();
+
+            // Menggunakan resource collection untuk mengubah data menjadi format GeoJSON
+            return new Kota($kotaCollection);
+        } catch (\Throwable $th) {
+            // Rollback transaksi jika terjadi kesalahan
+            DB::rollBack();
+
+            // Opsional: lempar kembali pengecualian untuk penanganan lebih lanjut
+            // throw $th;
+        }
     }
+
     public function historiskota()
     {
         $historiskota = DB::select("SELECT gid, kota, srsid, kodekota, peraturan, beritaacara, batasutara, batasbarat, batasselatan, batastimur, ST_AsGeoJSON(geom) AS geom FROM historiskota ");
@@ -95,13 +131,30 @@ class HomeController extends Controller
     }
     public function kecamatan()
     {
-        $kemantren = DB::select("SELECT gid, kemantren, kota, srsid, kodekecamatan, peraturan, beritaacara, batasutara, batasbarat, batasselatan, batastimur, ST_AsGeoJSON(geom) AS geom FROM kemantren ");
+        $data = null;
+        DB::beginTransaction();
+        try {
+            // Melakukan query untuk mendapatkan data kemantren
+            $data = DB::select("SELECT gid, kemantren, kota, srsid, kodekecamatan, peraturan, beritaacara, batasutara, batasbarat, batasselatan, batastimur, ST_AsGeoJSON(geom) AS geom FROM kemantren");
 
-        // Konversi hasil query menjadi collection
-        $kemantrenCollection = collect($kemantren);
+            // Konversi hasil query menjadi collection
+            $kemantrenCollection = collect($data);
 
-        // Menggunakan resource collection untuk mengubah data menjadi format GeoJSON
-        return new Kemantren($kemantrenCollection);
+            // Mengosongkan cache jika diperlukan
+            Cache::flush();
+
+            // Commit transaksi untuk menyimpan perubahan pada database
+            DB::commit();
+
+            // Menggunakan resource collection untuk mengubah data menjadi format GeoJSON
+            return new Kemantren($kemantrenCollection);
+        } catch (\Throwable $th) {
+            // Rollback transaksi jika terjadi kesalahan
+            DB::rollBack();
+
+            // Opsional: lempar kembali pengecualian untuk penanganan lebih lanjut
+            // throw $th;
+        }
     }
     public function historiskecamatan()
     {
@@ -115,13 +168,30 @@ class HomeController extends Controller
     }
     public function kelurahan()
     {
-        $kelurahan = DB::select("SELECT gid, kelurahan, kemantren, kota, srsid, kodekecamatan, kodekelurahan, peraturan, beritaacara, batasutara, batasbarat, batasselatan, batastimur, ST_AsGeoJSON(geom) AS geom FROM kelurahan ");
+        $data = null;
+        DB::beginTransaction();
+        try {
+            // Melakukan query untuk mendapatkan data kelurahan
+            $data = DB::select("SELECT gid, kelurahan, kemantren, kota, srsid, kodekecamatan, kodekelurahan, peraturan, beritaacara, batasutara, batasbarat, batasselatan, batastimur, ST_AsGeoJSON(geom) AS geom FROM kelurahan");
 
-        // Konversi hasil query menjadi collection
-        $kelurahanCollection = collect($kelurahan);
+            // Konversi hasil query menjadi collection
+            $kelurahanCollection = collect($data);
 
-        // Menggunakan resource collection untuk mengubah data menjadi format GeoJSON
-        return new Kelurahan($kelurahanCollection);
+            // Mengosongkan cache jika diperlukan
+            Cache::flush();
+
+            // Commit transaksi untuk menyimpan perubahan pada database
+            DB::commit();
+
+            // Menggunakan resource collection untuk mengubah data menjadi format GeoJSON
+            return new Kelurahan($kelurahanCollection);
+        } catch (\Throwable $th) {
+            // Rollback transaksi jika terjadi kesalahan
+            DB::rollBack();
+
+            // Opsional: lempar kembali pengecualian untuk penanganan lebih lanjut
+            // throw $th;
+        }
     }
     public function historiskelurahan()
     {
@@ -135,13 +205,21 @@ class HomeController extends Controller
     }
     public function rw()
     {
-        $rw = DB::select("SELECT gid, kelurahan, kemantren, kota, srsid, kodekecamatan, kodekelurahan, rw, peraturan, beritaacara, batasutara, batasbarat, batasselatan, batastimur, ST_AsGeoJSON(geom) AS geom FROM rw ");
+        $data = Null;
+        DB::beginTransaction();
+        try {
+            $data = DB::select("SELECT gid, kelurahan, kemantren, kota, srsid, kodekecamatan, kodekelurahan, rw, peraturan, beritaacara, batasutara, batasbarat, batasselatan, batastimur, ST_AsGeoJSON(geom) AS geom FROM rw ");
+            // Konversi hasil query menjadi collection
+            $rwCollection = collect($data);
 
-        // Konversi hasil query menjadi collection
-        $rwCollection = collect($rw);
-
-        // Menggunakan resource collection untuk mengubah data menjadi format GeoJSON
-        return new RW($rwCollection);
+            // Menggunakan resource collection untuk mengubah data menjadi format GeoJSON
+            return new RW($rwCollection);
+            Cache::flush();
+            DB::commit();
+        } catch (\Throwable $th) {
+            DB::rollBack();
+            //throw $th;
+        }
     }
     public function historisrw()
     {
